@@ -1,5 +1,3 @@
-#Snake Tutorial Python
-
 import math
 import random
 from tkinter.constants import S
@@ -13,21 +11,37 @@ SPACE = LENGTH // ROW
 class Position:
     def __init__(self, x, y):
         self.x = x
-        self.y = y        
+        self.y = y     
+        
+    def clone(self):
+        return Position(self.x, self.y)
+
+    def equals(self, other):
+        return self.x == other.x and self.y == other.y
+        
+
 
 class Cube:
-    def __init__(self, pos, color = (0, 175, 0)):
+    def __init__(self, pos, color = (0, 175, 0), eyes=False):
         self.pos = pos
         self.color = color      
+        self.eyes = eyes
 
-    def draw(self, surface, eyes=False):
+    def draw(self, surface):
         rect = pygame.Rect(self.pos.x * SPACE + 1, self.pos.y * SPACE + 1, SPACE - 1, SPACE -1)
         pygame.draw.rect(surface, self.color, rect)
+        if self.eyes:
+            eye_rect = pygame.Rect(self.pos.x * SPACE + 1 + 5, self.pos.y * SPACE + 1 + 8, 4, 4)
+            pygame.draw.rect(surface, (0,0,0), eye_rect)
+            eye_rect = pygame.Rect(self.pos.x * SPACE + 1 + 13, self.pos.y * SPACE + 1 + 8, 4, 4)
+            pygame.draw.rect(surface, (0,0,0), eye_rect)
 
 class Snake:
     def __init__(self, color, pos):
         self.body = []
-        self.body.append(Cube(pos))
+        self.body.append(Cube(pos.clone(), eyes=True))
+        for i in range(10):
+            self.body.append(Cube(pos.clone()))
         self.dirnx = 1
         self.dirny = 0
 
@@ -44,10 +58,18 @@ class Snake:
         elif keys_pressed[pygame.K_UP]: 
             self.dirnx = 0
             self.dirny = -1
-
-        head = self.body[0].pos
+        for i in range(len(self.body)-1, 0, -1):
+            self.body[i].pos.x = self.body[i - 1].pos.x
+            self.body[i].pos.y = self.body[i - 1].pos.y
+            
+        head = self.body[0].pos.clone()
         head.x += self.dirnx
         head.y += self.dirny
+
+        if self.check_hit(head):
+            return False
+
+        self.body[0].pos = head
         if head.x > ROW:
             head.x  = 0
         if head.x < 0:
@@ -56,7 +78,15 @@ class Snake:
             head.y  = 0
         if head.y < 0:
             head.y = ROW
+
+        return True
             
+    def check_hit(self, pos):
+        for cube in self.body:
+            if cube.pos.equals(pos):
+                return True
+                
+        return False
 
         
     def reset(self, pos):
@@ -88,8 +118,8 @@ def randomSnack(rows, item):
     pass
 
 
-def message_box(subject, content):
-    pass
+def message_box():
+    messagebox.showwarning('Game Over.', 'You hit your body with your head and died.')
 
 
 def main():
@@ -105,7 +135,9 @@ def main():
                 run = False
         
         keys_pressed = pygame.key.get_pressed()
-        s.move(keys_pressed)
+        if not s.move(keys_pressed):
+            message_box()
+            run = False
         redrawWindow(window, s)       
 
 
