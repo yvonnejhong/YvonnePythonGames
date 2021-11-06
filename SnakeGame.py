@@ -131,8 +131,9 @@ def randomSnack(rows, item):
     pass
 
 
-def message_box():
-    messagebox.showwarning('Game Over.', 'You hit your body with your head and died.')
+def message_box(snake):
+
+    messagebox.showwarning('Game Over.', f'You died. Total length = {len(snake.body)}')
 
 
 def main():
@@ -151,7 +152,7 @@ def main():
         
         keys_pressed = pygame.key.get_pressed()
         if not s.move(keys_pressed, a):
-            message_box()
+            message_box(s)
             run = False
         redrawWindow(window, s, a)       
 
