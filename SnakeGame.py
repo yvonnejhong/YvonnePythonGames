@@ -19,8 +19,6 @@ class Position:
     def equals(self, other):
         return self.x == other.x and self.y == other.y
         
-
-
 class Cube:
     def __init__(self, pos, color = (0, 175, 0), eyes=False):
         self.pos = pos
@@ -36,16 +34,26 @@ class Cube:
             eye_rect = pygame.Rect(self.pos.x * SPACE + 1 + 13, self.pos.y * SPACE + 1 + 8, 4, 4)
             pygame.draw.rect(surface, (0,0,0), eye_rect)
 
+class Apple(Cube):
+    def __init__(self):
+        super().__init__(Position(0,0), color=(255, 0, 0), eyes = False)
+        self.pick_location()
+    
+    def pick_location(self):
+        x = random.randint(0,ROW-1)
+        y = random.randint(0,ROW-1)
+        self.pos = Position(x,y)
+
 class Snake:
     def __init__(self, color, pos):
         self.body = []
         self.body.append(Cube(pos.clone(), eyes=True))
-        for i in range(10):
-            self.body.append(Cube(pos.clone()))
+        #for i in range(50):
+            #self.body.append(Cube(pos.clone()))
         self.dirnx = 1
         self.dirny = 0
 
-    def move(self, keys_pressed):
+    def move(self, keys_pressed, apple):
         if keys_pressed[pygame.K_LEFT]:
             self.dirnx = -1
             self.dirny = 0
@@ -69,12 +77,16 @@ class Snake:
         if self.check_hit(head):
             return False
 
+        if head.equals(apple.pos):
+            self.body.append(Cube(self.body[-1].pos.clone()))
+            apple.pick_location()
+
         self.body[0].pos = head
-        if head.x > ROW:
+        if head.x >= ROW:
             head.x  = 0
         if head.x < 0:
             head.x = ROW
-        if head.y > ROW:
+        if head.y >= ROW:
             head.y  = 0
         if head.y < 0:
             head.y = ROW
@@ -108,10 +120,11 @@ def drawGrid(surface):
         pygame.draw.line(surface,(0, 0, 0), (SPACE * i, 0), (SPACE * i, LENGTH))
              
 
-def redrawWindow(surface, snake):
+def redrawWindow(surface, snake, apple):
     surface.fill((255, 255, 255))
     drawGrid(surface)
     snake.draw(surface)
+    apple.draw(surface)
     pygame.display.update()
 
 def randomSnack(rows, item):
@@ -123,8 +136,10 @@ def message_box():
 
 
 def main():
+    pygame.display.set_caption("Snake Game")
     window = pygame.display.set_mode((LENGTH,LENGTH))
     s = Snake((0,255,0), Position(10,10))
+    a = Apple()
     clock = pygame.time.Clock()
     run = True
     while run:
@@ -135,10 +150,10 @@ def main():
                 run = False
         
         keys_pressed = pygame.key.get_pressed()
-        if not s.move(keys_pressed):
+        if not s.move(keys_pressed, a):
             message_box()
             run = False
-        redrawWindow(window, s)       
+        redrawWindow(window, s, a)       
 
 
 main()
