@@ -1,9 +1,7 @@
-import math
 import random
-from tkinter.constants import S
 import pygame
-import tkinter as tk
 from tkinter import messagebox
+
 LENGTH = 500
 ROW = 20
 SPACE = LENGTH // ROW
@@ -18,7 +16,7 @@ class Position:
 
     def equals(self, other):
         return self.x == other.x and self.y == other.y
-        
+
 class Cube:
     def __init__(self, pos, color = (0, 175, 0), eyes=False):
         self.pos = pos
@@ -101,19 +99,10 @@ class Snake:
         return False
 
         
-    def reset(self, pos):
-        pass
-
-    def addCube(self):
-        pass
-        
-
     def draw(self, surface):
         for cube in self.body:
             cube.draw(surface)
         
-
-
 def drawGrid(surface):
     for i in range(ROW):
         pygame.draw.line(surface,(0, 0, 0), (0, SPACE * i), (LENGTH, SPACE * i))
@@ -127,14 +116,9 @@ def redrawWindow(surface, snake, apple):
     apple.draw(surface)
     pygame.display.update()
 
-def randomSnack(rows, item):
-    pass
-
 
 def message_box(snake):
-
     messagebox.showwarning('Game Over.', f'You died. Total length = {len(snake.body)}')
-
 
 def main():
     pygame.display.set_caption("Snake Game")
@@ -155,6 +139,5 @@ def main():
             message_box(s)
             run = False
         redrawWindow(window, s, a)       
-
 
 main()
