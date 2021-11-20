@@ -129,7 +129,7 @@ def main():
     run = True
     while run:
         #pygame.time.delay(100)
-        clock.tick(10)
+        clock.tick(15)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False

@@ -20,7 +20,10 @@ class Ball(pygame.sprite.Sprite):
         self.y_speed = 4.0
         
     def update(self):
-        dy_speed = GRAVITY * TIME_UNIT 
+        gravity = GRAVITY
+        if HEIGHT - self.rect.bottom < 5:
+            gravity = 0 
+        dy_speed = gravity * TIME_UNIT 
         self.y_speed += dy_speed
         dx = self.x_speed * TIME_UNIT
         dy = self.y_speed * TIME_UNIT
@@ -33,8 +36,6 @@ class Ball(pygame.sprite.Sprite):
         dy = self.y_speed * TIME_UNIT    
         self.rect = self.rect.move(dx, dy)
 
-        
-    
 
 spriteGroup = pygame.sprite.Group()        
 
