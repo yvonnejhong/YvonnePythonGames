@@ -1,13 +1,22 @@
 import pygame
 import random
 import os
-WIDTH = 800
+import math
+WIDTH = 1000
 HEIGHT = 600
 BALL_SIZE = 70
 
 GRAVITY = 1
 TIME_UNIT = 0.5
 
+SPACE = pygame.transform.scale(pygame.image.load(os.path.join('Assets','Bg.jpg')),(WIDTH,HEIGHT))
+
+def dist(pos1, pos2):
+    # pos1 = (2,1)
+    # pos2 = (6,4)
+    return math.sqrt((pos1[0] - pos2[0]) ** 2 + (pos1[1] - pos2[1]) ** 2)
+    
+    
 
 class Ball(pygame.sprite.Sprite):
     def __init__(self, pos):
@@ -18,7 +27,8 @@ class Ball(pygame.sprite.Sprite):
         self.rect.center = pos
         self.x_speed = 3.0
         self.y_speed = 4.0
-        
+         
+              
     def update(self):
         gravity = GRAVITY
         if HEIGHT - self.rect.bottom < 5:
@@ -30,7 +40,7 @@ class Ball(pygame.sprite.Sprite):
         if self.rect.bottom + dy > HEIGHT or self.rect.top + dy < 0:          
             self.y_speed = -self.y_speed * 0.90
         if self.rect.left + dx < 0 or self.rect.right + dx > WIDTH:                 
-            self.x_speed = -self.x_speed * 0.95
+            self.x_speed = -self.x_speed * 0.8
 
         dx = self.x_speed * TIME_UNIT
         dy = self.y_speed * TIME_UNIT    
@@ -45,7 +55,12 @@ def main():
     window = pygame.display.set_mode((WIDTH,HEIGHT))
     clock = pygame.time.Clock()
     run = True
-    spriteGroup.add(Ball((500,100)))
+    spriteGroup.add(Ball((800,50)))
+    spriteGroup.add(Ball((700,40)))
+    spriteGroup.add(Ball((600,78)))
+    spriteGroup.add(Ball((500,39)))
+    spriteGroup.add(Ball((400,42)))
+    
     while run:
         clock.tick(120)
         for event in pygame.event.get():
@@ -53,7 +68,7 @@ def main():
                 run = False
 
         spriteGroup.update()
-        window.fill((255,255,255))
+        window.blit(SPACE,(0,0))
         spriteGroup.draw(window)
         pygame.display.update()    
 
