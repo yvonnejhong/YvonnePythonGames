@@ -22,6 +22,8 @@ bar_moving = 0
 game_start = False
 
 BG = pygame.transform.scale(pygame.image.load(os.path.join('Assets','background','city.jpg')),(WIDTH,HEIGHT))
+DING = pygame.mixer.Sound(os.path.join('Assets',"ding.mp3"))
+DING2 = pygame.mixer.Sound(os.path.join('Assets',"ding2.mp3"))
 
 def adjustBrightness(color, value):
     r = max(0, min(255, color[0] + value))
@@ -83,11 +85,22 @@ class Ball(pygame.sprite.Sprite):
                     brick.health -= 1
                     if brick.health <= 0:
                         brick.kill()
-                    self.x_speed = self.x_speed * (1 + (random.random()-0.5)*0.3)
-                    self.y_speed = -self.y_speed
+                        DING2.play()
+                    else:
+                        DING.play()
+                        
+                    if (self.x_speed > 0 and brick.rect.collidepoint(targetRect.midright)) or (self.x_speed < 0 and brick.rect.collidepoint(targetRect.midleft)): # left/right
+                        self.x_speed = -self.x_speed 
+                        self.y_speed = self.y_speed * (1 + (random.random()-0.5)*0.1)
+                    if (self.y_speed > 0 and brick.rect.collidepoint(targetRect.midbottom)) or (self.y_speed < 0 and brick.rect.collidepoint(targetRect.midtop)): # up/down
+                        self.x_speed = self.x_speed * (1 + (random.random()-0.5)*0.1)
+                        self.y_speed = -self.y_speed
+
+                    
+                    break   
             
             for bar in barGroup:
-                if targetRect.colliderect(bar):
+                if targetRect.colliderect(bar) :
                     self.x_speed = self.x_speed * (1 + (random.random()-0.5)*0.1)
                     self.y_speed = -self.y_speed
 
