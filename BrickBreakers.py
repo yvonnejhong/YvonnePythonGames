@@ -1,3 +1,19 @@
+# Monkeys Spinning Monkeys Kevin MacLeod (incompetech.com)
+# Licensed under Creative Commons: By Attribution 3.0 License
+# http://creativecommons.org/licenses/by/3.0/
+# Music promoted by https://www.chosic.com/free-music/all/
+
+# Fast Feel Banana Peel by Alexander Nakarada | https://www.serpentsoundstudios.com
+# Music promoted on https://www.chosic.com/free-music/all/
+# Creative Commons Attribution 4.0 International (CC BY 4.0)
+# https://creativecommons.org/licenses/by/4.0/
+
+# Music: Happy Clappy Ukulele by Shane Ivers - https://www.silvermansound.com
+# Licensed under Creative Commons Attribution 4.0 International License
+# https://creativecommons.org/licenses/by/4.0/
+# Music promoted by https://www.chosic.com/free-music/all/
+
+
 import pygame
 import os
 import random
@@ -24,6 +40,12 @@ game_start = False
 BG = pygame.transform.scale(pygame.image.load(os.path.join('Assets','background','city.jpg')),(WIDTH,HEIGHT))
 DING = pygame.mixer.Sound(os.path.join('Assets',"ding.mp3"))
 DING2 = pygame.mixer.Sound(os.path.join('Assets',"ding2.mp3"))
+DANG = pygame.mixer.Sound(os.path.join('Assets',"dang.mp3"))
+BGM = [
+    pygame.mixer.Sound(os.path.join('Assets','bgm',"Monkeys-Spinning-Monkeys.mp3")),
+    pygame.mixer.Sound(os.path.join('Assets','bgm',"FastFeelBananaPeel-320bit.mp3")),
+    pygame.mixer.Sound(os.path.join('Assets','bgm',"happy-clappy-ukulele.mp3"))
+]
 
 def adjustBrightness(color, value):
     r = max(0, min(255, color[0] + value))
@@ -95,14 +117,13 @@ class Ball(pygame.sprite.Sprite):
                 if (self.y_speed > 0 and brick.rect.collidepoint(targetRect.midbottom)) or (self.y_speed < 0 and brick.rect.collidepoint(targetRect.midtop)): # up/down
                     self.x_speed = self.x_speed * (1 + (random.random()-0.5)*0.1)
                     self.y_speed = -self.y_speed
-
-                    
                        
             
             for bar in barGroup:
-                if targetRect.colliderect(bar) :
+                if targetRect.colliderect(bar):
                     self.x_speed = self.x_speed * (1 + (random.random()-0.5)*0.1)
                     self.y_speed = -self.y_speed
+                    DANG.play()
 
             if self.rect.bottom + dy > HEIGHT:
                 self.kill()
@@ -184,7 +205,7 @@ def main():
             brickGroup.add(Brick((50*i + 50, 100+j*30), color, 2))
     ballGroup.add(Ball((600, 650)))
     barGroup.add(Bar((600, 675)))
-
+    BGM[random.randint(0, len(BGM)-1)].play(-1)
     while run:
         clock.tick(FPS)
         for event in pygame.event.get():
