@@ -6,7 +6,7 @@ pygame.init()
 
 WIDTH = 1200
 HEIGHT = 760
-FPS = 60
+FPS = 120
 
 BRICK_WIDTH, BRICK_HEIGHT = 50, 30
 BAR_WIDTH = 120
@@ -14,8 +14,8 @@ BAR_HEIGHT = 20
 RED = (255, 0, 0)
 BLUE = (0, 0, 255)
 
-BAR_VELOCITY = 10
-BALL_VELOCITY = 5.0
+BAR_VELOCITY = 5
+BALL_VELOCITY = 3
 TIME_UNIT = 1
 bar_moving = 0
 
@@ -80,24 +80,24 @@ class Ball(pygame.sprite.Sprite):
                 self.x_speed = -self.x_speed
 
             targetRect = self.rect.move(dx, dy)
-            for brick in brickGroup:
-                if targetRect.colliderect(brick.rect):
-                    brick.health -= 1
-                    if brick.health <= 0:
-                        brick.kill()
-                        DING2.play()
-                    else:
-                        DING.play()
-                        
-                    if (self.x_speed > 0 and brick.rect.collidepoint(targetRect.midright)) or (self.x_speed < 0 and brick.rect.collidepoint(targetRect.midleft)): # left/right
-                        self.x_speed = -self.x_speed 
-                        self.y_speed = self.y_speed * (1 + (random.random()-0.5)*0.1)
-                    if (self.y_speed > 0 and brick.rect.collidepoint(targetRect.midbottom)) or (self.y_speed < 0 and brick.rect.collidepoint(targetRect.midtop)): # up/down
-                        self.x_speed = self.x_speed * (1 + (random.random()-0.5)*0.1)
-                        self.y_speed = -self.y_speed
+            brick = pygame.sprite.spritecollideany(self, brickGroup)
+            if brick != None:
+                brick.health -= 1
+                if brick.health <= 0:
+                    brick.kill()
+                    DING2.play()
+                else:
+                    DING.play()
+                    
+                if (self.x_speed > 0 and brick.rect.collidepoint(targetRect.midright)) or (self.x_speed < 0 and brick.rect.collidepoint(targetRect.midleft)): # left/right
+                    self.x_speed = -self.x_speed 
+                    self.y_speed = self.y_speed * (1 + (random.random()-0.5)*0.1)
+                if (self.y_speed > 0 and brick.rect.collidepoint(targetRect.midbottom)) or (self.y_speed < 0 and brick.rect.collidepoint(targetRect.midtop)): # up/down
+                    self.x_speed = self.x_speed * (1 + (random.random()-0.5)*0.1)
+                    self.y_speed = -self.y_speed
 
                     
-                    break   
+                       
             
             for bar in barGroup:
                 if targetRect.colliderect(bar) :
@@ -106,7 +106,8 @@ class Ball(pygame.sprite.Sprite):
 
             if self.rect.bottom + dy > HEIGHT:
                 self.kill()
-                lose()
+                if len(ballGroup) == 0:
+                    lose()
 
             dx = self.x_speed * TIME_UNIT
             dy = self.y_speed * TIME_UNIT    
@@ -152,8 +153,7 @@ def lose():
     # lost one life
     global game_start
     game_start = False
-    for bar in barGroup:
-        bar.kill()
+    barGroup.empty()
     ballGroup.add(Ball((600, 650)))
     barGroup.add(Bar((600, 675)))
 
@@ -186,7 +186,6 @@ def main():
     barGroup.add(Bar((600, 675)))
 
     while run:
-        #pygame.time.delay(100)
         clock.tick(FPS)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
