@@ -29,9 +29,10 @@ BAR_WIDTH = 120
 BAR_HEIGHT = 20
 RED = (255, 0, 0)
 BLUE = (0, 0, 255)
+WHITE = (255, 255, 255)
 
 BAR_VELOCITY = 5
-BALL_VELOCITY = 3
+BALL_VELOCITY = 3.0
 TIME_UNIT = 1
 bar_moving = 0
 
@@ -47,12 +48,66 @@ BGM = [
     pygame.mixer.Sound(os.path.join('Assets','bgm',"happy-clappy-ukulele.mp3"))
 ]
 
+prize_font = pygame.font.SysFont(None, 25)
+
 def adjustBrightness(color, value):
     r = max(0, min(255, color[0] + value))
     g = max(0, min(255, color[1] + value))
     b = max(0, min(255, color[2] + value))
 
     return (r, g, b)
+
+brickGroup = pygame.sprite.Group()    
+ballGroup = pygame.sprite.Group()    
+barGroup = pygame.sprite.Group()
+prizeGroup = pygame.sprite.Group()
+
+class Prize(pygame.sprite.Sprite):
+    def __init__(self, pos, color, text) -> None:
+        super().__init__()
+        self.color = color
+        self.text = text
+        
+        self.rect = pygame.Rect(pos[0], pos[1], BRICK_WIDTH, BRICK_HEIGHT)
+        self.image = self.drawPrize()
+
+    
+    def drawPrize(self):
+        s1 = pygame.Surface((BRICK_WIDTH, BRICK_HEIGHT), pygame.SRCALPHA)
+        pygame.draw.rect(s1, self.color, pygame.Rect(0,0, BRICK_WIDTH, BRICK_HEIGHT), border_radius=15)
+        highlight = adjustBrightness(self.color, 150)
+        pygame.draw.circle(s1, highlight, (15, 15), 15, 5, False, True, False, False)
+        pygame.draw.line(s1, highlight, (15,0), (BRICK_WIDTH-12, 0), 7)
+        shadow = adjustBrightness(self.color, -150)
+        pygame.draw.circle(s1, shadow, (BRICK_WIDTH - 15, 15), 15, 3, False, False, False, True)
+        pygame.draw.line(s1, shadow, (12,BRICK_HEIGHT), (BRICK_WIDTH-15, BRICK_HEIGHT), 5)
+        text = prize_font.render(self.text, 1, WHITE)
+        center_x = (BRICK_WIDTH - text.get_width()) / 2
+        center_y = (BRICK_HEIGHT - text.get_height()) /2
+        s1.blit(text, (center_x, center_y))
+
+        s1 =  pygame.transform.scale(s1, (BRICK_WIDTH-5, BRICK_HEIGHT-5))
+
+        s2 = pygame.Surface((BRICK_WIDTH, BRICK_HEIGHT), pygame.SRCALPHA)
+        pygame.draw.rect(s2, (150,150,150), s1.get_rect().move(3,3), border_radius=15)
+        s2.blit(s1, (0,0))
+        return s2
+    
+    def update(self):
+        self.rect = self.rect.move(0, 2)
+        if self.rect.top > HEIGHT:
+            self.kill()
+        bar = pygame.sprite.spritecollideany(self, barGroup)
+        if bar != None:
+            self.kill()
+            self.handle_effect()
+
+    def handle_effect(self):
+        if self.text == "M":
+            for ball in ballGroup:
+                ballGroup.add(Ball(ball.rect.center, x_speed=BALL_VELOCITY - 0.5, y_speed=ball.y_speed))
+                ballGroup.add(Ball(ball.rect.center, x_speed=BALL_VELOCITY + 0.5, y_speed=ball.y_speed))
+
 
 class Brick(pygame.sprite.Sprite):
     def __init__(self, pos, color, health):
@@ -63,6 +118,7 @@ class Brick(pygame.sprite.Sprite):
         brickSurface = pygame.Surface((BRICK_WIDTH, BRICK_HEIGHT))
         self.image = self.drawBrick(brickSurface)
         self.rect = pygame.Rect(pos[0], pos[1], BRICK_WIDTH, BRICK_HEIGHT)
+        self.is_breakable = True
 
 
     def drawBrick(self, surface):
@@ -75,16 +131,20 @@ class Brick(pygame.sprite.Sprite):
         pygame.draw.line(surface, shadow, (BRICK_WIDTH, 0), (BRICK_WIDTH, BRICK_HEIGHT), 5)
         return surface
 
+class NonBreakableBrick(Brick):
+    def __init__(self, pos):
+        super().__init__(pos, (100,100,100), 9999)
+        self.is_breakable = False
 
 class Ball(pygame.sprite.Sprite):
-    def __init__(self, pos):
+    def __init__(self, pos, x_speed = BALL_VELOCITY, y_speed = -BALL_VELOCITY):
         super().__init__()
         self.image = pygame.image.load(os.path.join('Assets', 'Blue_ball.png')).convert_alpha()
         self.image = pygame.transform.scale(self.image, (30, 30))
         self.rect = self.image.get_rect()
         self.rect.center = pos
-        self.x_speed = BALL_VELOCITY
-        self.y_speed = -BALL_VELOCITY
+        self.x_speed = x_speed
+        self.y_speed = y_speed
 
     def update(self):
         if not game_start:
@@ -106,8 +166,14 @@ class Ball(pygame.sprite.Sprite):
             if brick != None:
                 brick.health -= 1
                 if brick.health <= 0:
+                    if random.randint(0,100) < 10 and len(ballGroup) < 5 : # dropping prize
+                        prizeGroup.add(Prize((brick.rect.left, brick.rect.top), RED, "M"))
                     brick.kill()
                     DING2.play()
+                   
+                    if not any([x for x in brickGroup if x.is_breakable]):
+                        next_level()
+
                 else:
                     DING.play()
                     
@@ -159,13 +225,11 @@ class Bar(pygame.sprite.Sprite):
             dx = 0
         self.rect = self.rect.move(dx, 0)
 
-brickGroup = pygame.sprite.Group()    
-ballGroup = pygame.sprite.Group()    
-barGroup = pygame.sprite.Group()
 
 def redrawWindow(surface:pygame.surface.Surface):
     surface.blit(BG, (0,0))
     brickGroup.draw(surface)
+    prizeGroup.draw(surface)
     ballGroup.draw(surface)
     barGroup.draw(surface)
     pygame.display.update()
@@ -190,22 +254,68 @@ def update(key_pressed):
 
     brickGroup.update()
     ballGroup.update()
+    prizeGroup.update()
     barGroup.update()
 
+def setup_stage(level):
+    if level == 0:
+        for j in range(9):
+            color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)) 
+            for i in range(0, 22):
+                brickGroup.add(Brick((50*i + 50, 100+j*30), color, 2))
+    elif level == 1:
+        for j in range(9):
+            color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)) 
+            for i in range(0, 22):
+                if i == 11:
+                    continue
+                if j == 8:
+                    brickGroup.add(NonBreakableBrick((50*i + 50, 100+j*30)))
+                else:    
+                    brickGroup.add(Brick((50*i + 50, 100+j*30), color, 2))
+    elif level == 2:
+        for j in range(11):
+            color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)) 
+            for i in range(0, 22):
+                if i == 5 or i == 15:
+                    continue
+                if j == 4 or j == 8:
+                    brickGroup.add(NonBreakableBrick((50*i + 50, 100+j*30)))
+                else:    
+                    brickGroup.add(Brick((50*i + 50, 100+j*30), color, 2))
+
+TOTAL_LEVEL = 3
+def next_level():
+    global level, bgm
+
+    brickGroup.empty()
+    ballGroup.empty()
+    barGroup.empty()
+    level = (level + 1) % TOTAL_LEVEL
+    setup_stage(level)
+    global game_start
+    game_start = False
+    ballGroup.add(Ball((600, 650)))
+    barGroup.add(Bar((600, 675)))
+    bgm.stop()
+    bgm = BGM[random.randint(0, len(BGM)-1)]
+    bgm.play(-1)
 
 def main():
-    global game_start
+    global game_start, level, bgm
     pygame.display.set_caption("Brick Breaker")
     window = pygame.display.set_mode((WIDTH,HEIGHT))
     clock = pygame.time.Clock()
     run = True
-    for j in range(7):
-        color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)) 
-        for i in range(1, 21):
-            brickGroup.add(Brick((50*i + 50, 100+j*30), color, 2))
+
+    level = 2
+    setup_stage(level)
+
     ballGroup.add(Ball((600, 650)))
     barGroup.add(Bar((600, 675)))
-    BGM[random.randint(0, len(BGM)-1)].play(-1)
+
+    bgm = BGM[random.randint(0, len(BGM)-1)]
+    bgm.play(-1)
     while run:
         clock.tick(FPS)
         for event in pygame.event.get():
