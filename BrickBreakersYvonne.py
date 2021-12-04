@@ -3,10 +3,14 @@ import os
 from random import randint
 pygame.init()
 WIDTH = 1280
-HEIGHT = 780
+HEIGHT = 760
 FPS = 60 
 BRICK_HEIGHT = 30
 BRICK_WIDTH = 50
+BALL_SIZE = 30
+BAR_WIDTH = 120
+BAR_HEIGHT = 20
+TIME_UNIT = 1
 CITY = pygame.transform.scale(pygame.image.load(os.path.join('Assets', 'background','city.jpg')),(WIDTH,HEIGHT))
 
 def adjust_brightness(color, value):
@@ -15,9 +19,47 @@ def adjust_brightness(color, value):
     g = max(min(color[1] + value, 255), 0)
     b = max(min(color[2] + value, 255), 0)
 
-
     return (r, g, b)
-    
+
+class Bar(pygame.sprite.Sprite):
+    def __init__(self, pos):
+        super().__init__()
+        self.color = (200, 200, 200)
+        self.pos = pos
+        surface = pygame.Surface((BAR_WIDTH, BAR_HEIGHT))
+        self.draw_bar(surface)
+        self.image = surface
+        self.rect = pygame.Rect(pos[0], pos[1], BAR_WIDTH, BAR_HEIGHT)
+        self.rect.center = pos
+    def draw_bar(self, surface):  
+        surface.fill(self.color)
+        pygame.draw.line(surface, adjust_brightness(self.color, 100), (0, 0), (BAR_WIDTH, 0), 5)
+        pygame.draw.line(surface, adjust_brightness(self.color, 100), (0, 0), (0, BAR_HEIGHT), 5)
+        pygame.draw.line(surface, adjust_brightness(self.color, -100), (BAR_WIDTH, 0), (BAR_WIDTH, BAR_HEIGHT), 5)
+        pygame.draw.line(surface, adjust_brightness(self.color, -100), (0, BAR_HEIGHT), (BAR_WIDTH, BAR_HEIGHT), 5)
+
+class Ball(pygame.sprite.Sprite):
+    def __init__(self, pos, x_speed, y_speed):
+        super().__init__()    
+        self.pos = pos
+        self.x_speed = x_speed
+        self.y_speed = y_speed
+        self.image = pygame.image.load(os.path.join('Assets', 'blue_ball.png')).convert_alpha()
+        self.image = pygame.transform.scale(self.image, (BALL_SIZE, BALL_SIZE))
+        self.rect = self.image.get_rect()
+        self.rect.center = pos
+    def update(self):
+        dx = self.x_speed * TIME_UNIT
+        dy = self.y_speed * TIME_UNIT
+        if self.rect.bottom + dy > HEIGHT or self.rect.top + dy < 0:          
+            self.y_speed = -self.y_speed
+        if self.rect.left + dx < 0 or self.rect.right + dx > WIDTH:                 
+            self.x_speed = -self.x_speed 
+        dx = self.x_speed * TIME_UNIT
+        dy = self.y_speed * TIME_UNIT    
+        self.rect = self.rect.move(dx, dy)
+
+
 
 class Brick(pygame.sprite.Sprite):
     def __init__(self, pos, color, health) -> None:
@@ -38,11 +80,15 @@ class Brick(pygame.sprite.Sprite):
         pygame.draw.line(surface, adjust_brightness(self.color, -100), (0, BRICK_HEIGHT), (BRICK_WIDTH, BRICK_HEIGHT), 5)
     
 pygame.display.set_caption("Brick Breaker Game")
-brickGroup = pygame.sprite.Group()        
+brickGroup = pygame.sprite.Group()  
+ballGroup = pygame.sprite.Group()   
+barGroup = pygame.sprite.Group()     
 
 def draw_window(surface:pygame.Surface):
     surface.blit(CITY,(0,0))
     brickGroup.draw(surface)
+    ballGroup.draw(surface)
+    barGroup.draw(surface)
     pygame.display.update()
     
 def main():
@@ -53,9 +99,13 @@ def main():
         color = (randint(0, 255), randint(0, 255), randint(0, 255))
         for i in range(22):
             brickGroup.add(Brick((100 + BRICK_WIDTH * i, 100 + BRICK_HEIGHT * r), color, 2))
+    ballGroup.add(Ball((650, 650),3, -3))
+    barGroup.add(Bar((650, 675)))
     while run:
         clock.tick(FPS)
         brickGroup.update()
+        barGroup.update()
+        ballGroup.update()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
