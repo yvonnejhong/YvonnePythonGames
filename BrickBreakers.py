@@ -133,7 +133,7 @@ class Brick(pygame.sprite.Sprite):
 
 class NonBreakableBrick(Brick):
     def __init__(self, pos):
-        super().__init__(pos, (100,100,100), 9999)
+        super().__init__(pos, (100,100,100), 100)
         self.is_breakable = False
 
 class Ball(pygame.sprite.Sprite):
