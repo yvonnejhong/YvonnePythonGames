@@ -206,13 +206,17 @@ def update():
 
 
 def main():
+    input_id = pygame.midi.get_default_input_id()
+    if input_id < 0:
+        print("Please connect a midi keyboard to play. Quit")
+        return
     
     pygame.display.set_caption("Piano Game")
     window = pygame.display.set_mode((WIDTH,HEIGHT))
     clock = pygame.time.Clock()
     run = True
 
-    midi_input = pygame.midi.Input(pygame.midi.get_default_input_id())
+    midi_input = pygame.midi.Input(input_id)
     midi_output = pygame.midi.Output(pygame.midi.get_default_output_id())
 
     music_line_group.add(MusicLine((100, 100), notes_group))
