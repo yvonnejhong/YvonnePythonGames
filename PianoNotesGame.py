@@ -34,6 +34,8 @@ treble_notes_group = pygame.sprite.Group()
 bass_notes_group = pygame.sprite.Group()
 text_group = pygame.sprite.Group()
 
+first_note = None
+
 class GameContext:
     def __init__(self) -> None:
         self.success = 0
@@ -127,6 +129,13 @@ class MusicNote(pygame.sprite.Sprite):
         self.octave = octave
         self.adjust_position()
         self.frame_count = 0
+        self.is_current = False
+        self.image_origin = self.image.copy()
+        self.image_active = self.image.copy()
+        image_pixel_array = pygame.PixelArray(self.image_active)
+        image_pixel_array.replace(BLACK, RED)
+
+        
     
     def adjust_octave0_treble(self):
         if self.note == 'E':
@@ -217,6 +226,11 @@ class MusicNote(pygame.sprite.Sprite):
 
 
     def update(self):
+        if self.is_current:
+            self.image = self.image_active
+        else:
+            self.image = self.image_origin
+
         if context.note_speed >= 1:
             self.rect.x -= context.note_speed
         else:
@@ -248,7 +262,20 @@ def adjust_level():
 
 def update():
     adjust_level()
+    global first_note
+
+    candidates = []
+    for line in music_line_group:
+        if len(line.notes) > 0:
+            candidates.append(line.notes.sprites()[0])
+
+    if len(candidates) > 0:
+        first_note = min(candidates,  key = lambda x:x.rect.x)
+
+    if first_note != None:
+        first_note.is_current = True
     music_line_group.update()
+    
     text_group.update()
 
 
@@ -280,8 +307,10 @@ def main():
         frame += 1
         if frame > 100/context.note_speed:
             frame = 0
-            treble_notes_group.add(MusicNote(1000, random.choice(notes), random.randint(0,1)))
-            bass_notes_group.add(MusicNote(1000, random.choice(notes), random.randint(0,1), is_treble=False))
+            if random.randint(0,1) == 0:
+                treble_notes_group.add(MusicNote(1000, random.choice(notes), random.randint(0,1)))
+            else:
+                bass_notes_group.add(MusicNote(990, random.choice(notes), random.randint(0,1), is_treble=False))
         for e in pygame.event.get():
             if e.type == pygame.QUIT:
                 run = False
@@ -289,11 +318,10 @@ def main():
                 if e.status == 144:
                     midi_output.note_on(e.data1, e.data2)
                     note = number_to_note(e.data1)
-                    if len(treble_notes_group) > 0:
-                        first_note_sprite = bass_notes_group.sprites()[0]
-                        if note == first_note_sprite.note:
+                    if first_note != None:
+                        if note == first_note.note:
                             text_group.add(NoteText(note))
-                            first_note_sprite.kill()
+                            first_note.kill()
                             context.increase_success()
                         else:
                             text_group.add(NoteText(note, False))
