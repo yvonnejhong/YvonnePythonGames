@@ -30,7 +30,8 @@ BG = pygame.transform.scale(pygame.image.load(os.path.join('Assets','background'
 
 
 music_line_group = pygame.sprite.Group()
-notes_group = pygame.sprite.Group()
+treble_notes_group = pygame.sprite.Group()
+bass_notes_group = pygame.sprite.Group()
 text_group = pygame.sprite.Group()
 
 class GameContext:
@@ -94,11 +95,13 @@ class MusicLine(pygame.sprite.Sprite):
         if is_treble:
             clef = pygame.transform.scale(
                 pygame.image.load(os.path.join('Assets','music_notes','treble_Clef.png')).convert_alpha(),(CLEF_WIDTH,CLEF_HEIGHT))
+            surface.blit(clef, (10, 40))
         else:
             clef = pygame.transform.scale(
-                pygame.image.load(os.path.join('Assets','music_notes','Bass_Clef.png')).convert_alpha(),(CLEF_WIDTH,CLEF_HEIGHT))
+                pygame.image.load(os.path.join('Assets','music_notes','Bass_Clef.png')).convert_alpha(),(CLEF_WIDTH,CLEF_WIDTH))
+            surface.blit(clef, (10, 70))
 
-        surface.blit(clef, (10, 40))
+        
         self.image_staff = surface
         self.image = surface
         self.rect = self.image.get_rect()
@@ -125,7 +128,7 @@ class MusicNote(pygame.sprite.Sprite):
         self.adjust_position()
         self.frame_count = 0
     
-    def adjust_octave0(self):
+    def adjust_octave0_treble(self):
         if self.note == 'E':
             self.rect.bottom = 143
         elif self.note == 'D':
@@ -142,7 +145,7 @@ class MusicNote(pygame.sprite.Sprite):
             pygame.draw.line(self.image, BLACK, (0, MUSICNOTE_HEIGHT - 12), (MUSICNOTE_WIDTH + 20, MUSICNOTE_HEIGHT - 12), width=2)
             self.rect.bottom = 163
 
-    def adjust_octave1(self):
+    def adjust_octave1_treble(self):
         self.image = pygame.transform.flip(self.image, True, True)
         if self.note == 'C':
             self.rect.top = 70
@@ -161,11 +164,55 @@ class MusicNote(pygame.sprite.Sprite):
             pygame.draw.line(self.image, BLACK, (0, 20), (MUSICNOTE_WIDTH + 20, 20), width=2)
             self.rect.top = 10            
 
+
+    def adjust_octave0_bass(self):
+        if self.note == 'D':
+            self.rect.bottom = 103
+        elif self.note == 'E':
+            self.rect.bottom = 163
+            pygame.draw.line(self.image, BLACK, (0, MUSICNOTE_HEIGHT - 12), (MUSICNOTE_WIDTH + 20, MUSICNOTE_HEIGHT - 12), width=2)
+        elif self.note == 'F':
+            self.rect.bottom = 153
+        elif self.note == 'G':
+            self.rect.bottom = 143            
+        elif self.note == 'A':
+            self.rect.bottom = 133            
+        elif self.note == 'B':
+            self.rect.bottom = 123            
+        elif self.note == 'C':
+            self.rect.bottom = 113
+
+    def adjust_octave1_bass(self):
+        self.image = pygame.transform.flip(self.image, True, True)
+        if self.note == 'C':
+            self.rect.top = 20
+            pygame.draw.line(self.image, BLACK, (0, 10), (MUSICNOTE_WIDTH + 20, 10), width=2)
+        elif self.note == 'D':
+            self.rect.top = 10
+            pygame.draw.line(self.image, BLACK, (0, 20), (MUSICNOTE_WIDTH + 20, 20), width=2)
+        elif self.note == 'E':
+            self.rect.top = 70
+        elif self.note == 'F':
+            self.rect.top = 60
+        elif self.note == 'G':
+            self.rect.top = 50            
+        elif self.note == 'A':
+            self.rect.top = 40            
+        elif self.note == 'B':
+            self.rect.top = 30   
+
     def adjust_position(self):
-        if self.octave == 0:
-            self.adjust_octave0()
-        elif self.octave == 1:
-            self.adjust_octave1()
+        if self.is_treble:
+            if self.octave == 0:
+                self.adjust_octave0_treble()
+            elif self.octave == 1:
+                self.adjust_octave1_treble()
+        else:
+            if self.octave == 0:
+                self.adjust_octave0_bass()
+            elif self.octave == 1:
+                self.adjust_octave1_bass()
+
             
 
 
@@ -219,7 +266,10 @@ def main():
     midi_input = pygame.midi.Input(input_id)
     midi_output = pygame.midi.Output(pygame.midi.get_default_output_id())
 
-    music_line_group.add(MusicLine((100, 100), notes_group))
+    music_line_group.add(MusicLine((100, 100), treble_notes_group))
+
+    music_line_group.add(MusicLine((100, 400), bass_notes_group, is_treble=False))
+
     frame = 0
     notes = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
     #notes = ['F']
@@ -230,7 +280,8 @@ def main():
         frame += 1
         if frame > 100/context.note_speed:
             frame = 0
-            notes_group.add(MusicNote(1000, random.choice(notes), random.randint(0,1)))
+            treble_notes_group.add(MusicNote(1000, random.choice(notes), random.randint(0,1)))
+            bass_notes_group.add(MusicNote(1000, random.choice(notes), random.randint(0,1), is_treble=False))
         for e in pygame.event.get():
             if e.type == pygame.QUIT:
                 run = False
@@ -238,8 +289,8 @@ def main():
                 if e.status == 144:
                     midi_output.note_on(e.data1, e.data2)
                     note = number_to_note(e.data1)
-                    if len(notes_group) > 0:
-                        first_note_sprite = notes_group.sprites()[0]
+                    if len(treble_notes_group) > 0:
+                        first_note_sprite = bass_notes_group.sprites()[0]
                         if note == first_note_sprite.note:
                             text_group.add(NoteText(note))
                             first_note_sprite.kill()
