@@ -13,7 +13,7 @@
 # https://creativecommons.org/licenses/by/4.0/
 # Music promoted by https://www.chosic.com/free-music/all/
 
-
+from threading import Timer
 import pygame
 import os
 import random
@@ -37,6 +37,9 @@ TIME_UNIT = 1
 bar_moving = 0
 
 game_start = False
+
+in_power_mode = False
+power_mode_timer = None
 
 BG = pygame.transform.scale(pygame.image.load(os.path.join('Assets','background','city.jpg')),(WIDTH,HEIGHT))
 DING = pygame.mixer.Sound(os.path.join('Assets',"ding.mp3"))
@@ -105,9 +108,26 @@ class Prize(pygame.sprite.Sprite):
     def handle_effect(self):
         if self.text == "M":
             for ball in ballGroup:
-                ballGroup.add(Ball(ball.rect.center, x_speed=BALL_VELOCITY - 0.5, y_speed=ball.y_speed))
-                ballGroup.add(Ball(ball.rect.center, x_speed=BALL_VELOCITY + 0.5, y_speed=ball.y_speed))
+                b1 = Ball(ball.rect.center, x_speed=BALL_VELOCITY - 0.5, y_speed=ball.y_speed)
+                b1.change_color('Yellow')
+                ballGroup.add(b1)
+                b2 = Ball(ball.rect.center, x_speed=BALL_VELOCITY + 0.5, y_speed=ball.y_speed)
+                b2.change_color('Yellow')
 
+                ballGroup.add(b2)
+        elif self.text == "P":
+            global in_power_mode, power_mode_timer
+            in_power_mode = True    
+            def timeout():
+                global in_power_mode
+                in_power_mode = False
+            if power_mode_timer != None:
+                power_mode_timer.cancel()
+            power_mode_timer = Timer(10, timeout)
+            power_mode_timer.start()       
+                   
+                   
+        
 
 class Brick(pygame.sprite.Sprite):
     def __init__(self, pos, color, health):
@@ -145,7 +165,7 @@ class Ball(pygame.sprite.Sprite):
         self.rect.center = pos
         self.x_speed = x_speed
         self.y_speed = y_speed
-
+        self.color = "Blue"
     def update(self):
         if not game_start:
             dx = bar_moving * BAR_VELOCITY
@@ -154,35 +174,44 @@ class Ball(pygame.sprite.Sprite):
                 dx = 0
             self.rect = self.rect.move(dx, 0)            
         else:
+            if in_power_mode:
+                self.change_color("Red")
+            else:
+                self.change_color("Blue")
             dx = self.x_speed * TIME_UNIT
             dy = self.y_speed * TIME_UNIT
             if self.rect.top + dy < 0:          
                 self.y_speed = -self.y_speed 
             if self.rect.left + dx < 0 or self.rect.right + dx > WIDTH:                 
                 self.x_speed = -self.x_speed
-
+                            
             targetRect = self.rect.move(dx, dy)
             brick = pygame.sprite.spritecollideany(self, brickGroup)
             if brick != None:
-                brick.health -= 1
+                if in_power_mode:
+                    brick.health = 0
+                else:    
+                    brick.health -= 1
                 if brick.health <= 0:
-                    if random.randint(0,100) < 10 and len(ballGroup) < 5 : # dropping prize
-                        prizeGroup.add(Prize((brick.rect.left, brick.rect.top), RED, "M"))
+                    if random.randint(0,100) < 5 and len(ballGroup) < 3 and not in_power_mode: # dropping prize
+                        prizeGroup.add(Prize((brick.rect.left, brick.rect.top), RED, "P"))
+                    elif random.randint(0,100) < 10 and len(ballGroup) < 5 and not in_power_mode : # dropping prize
+                        prizeGroup.add(Prize((brick.rect.left, brick.rect.top), BLUE, "M"))
                     brick.kill()
                     DING2.play()
-                   
+                                           
                     if not any([x for x in brickGroup if x.is_breakable]):
                         next_level()
 
                 else:
                     DING.play()
-                    
-                if (self.x_speed > 0 and brick.rect.collidepoint(targetRect.midright)) or (self.x_speed < 0 and brick.rect.collidepoint(targetRect.midleft)): # left/right
-                    self.x_speed = -self.x_speed 
-                    self.y_speed = self.y_speed * (1 + (random.random()-0.5)*0.1)
-                if (self.y_speed > 0 and brick.rect.collidepoint(targetRect.midbottom)) or (self.y_speed < 0 and brick.rect.collidepoint(targetRect.midtop)): # up/down
-                    self.x_speed = self.x_speed * (1 + (random.random()-0.5)*0.1)
-                    self.y_speed = -self.y_speed
+                if not in_power_mode:    
+                    if (self.x_speed > 0 and brick.rect.collidepoint(targetRect.midright)) or (self.x_speed < 0 and brick.rect.collidepoint(targetRect.midleft)): # left/right
+                        self.x_speed = -self.x_speed 
+                        self.y_speed = self.y_speed * (1 + (random.random()-0.5)*0.1)
+                    if (self.y_speed > 0 and brick.rect.collidepoint(targetRect.midbottom)) or (self.y_speed < 0 and brick.rect.collidepoint(targetRect.midtop)): # up/down
+                        self.x_speed = self.x_speed * (1 + (random.random()-0.5)*0.1)
+                        self.y_speed = -self.y_speed
                        
             
             for bar in barGroup:
@@ -199,6 +228,14 @@ class Ball(pygame.sprite.Sprite):
             dx = self.x_speed * TIME_UNIT
             dy = self.y_speed * TIME_UNIT    
             self.rect = self.rect.move(dx, dy)
+
+    def change_color(self, color):
+        if self.color == color:
+            return 
+        else:
+            self.image = pygame.image.load(os.path.join('Assets', f'{color}_ball.png')).convert_alpha()
+            self.image = pygame.transform.scale(self.image, (30, 30))
+            self.color = color        
 
 class Bar(pygame.sprite.Sprite):
     def __init__(self, pos):
@@ -236,9 +273,12 @@ def redrawWindow(surface:pygame.surface.Surface):
 
 def lose():
     # lost one life
-    global game_start
+    global game_start, in_power_mode
     game_start = False
     barGroup.empty()
+    if power_mode_timer != None:
+        power_mode_timer.cancel()
+    in_power_mode = False
     ballGroup.add(Ball((600, 650)))
     barGroup.add(Bar((600, 675)))
 
@@ -282,7 +322,7 @@ def setup_stage(level):
                 if j == 4 or j == 8:
                     brickGroup.add(NonBreakableBrick((50*i + 50, 100+j*30)))
                 else:    
-                    brickGroup.add(Brick((50*i + 50, 100+j*30), color, 2))
+                    brickGroup.add(Brick((50*i + 50, 100+j*30), color, 1))
 
 TOTAL_LEVEL = 3
 def next_level():
@@ -320,6 +360,8 @@ def main():
         clock.tick(FPS)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                if power_mode_timer != None:
+                    power_mode_timer.cancel()
                 run = False
         
         keys_pressed = pygame.key.get_pressed()
