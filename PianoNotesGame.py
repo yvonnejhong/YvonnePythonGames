@@ -12,7 +12,7 @@ pygame.midi.init()
 
 WIDTH = 1200
 HEIGHT = 760
-FPS = 60
+FPS = 50
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 GREEN = (0, 255, 0)
@@ -307,7 +307,7 @@ def main():
         frame += 1
         if frame > 100/context.note_speed:
             frame = 0
-            if random.randint(0,1) == 0:
+            if random.randint(0,100) > 80:
                 treble_notes_group.add(MusicNote(1000, random.choice(notes), random.randint(0,1)))
             else:
                 bass_notes_group.add(MusicNote(990, random.choice(notes), random.randint(0,1), is_treble=False))
