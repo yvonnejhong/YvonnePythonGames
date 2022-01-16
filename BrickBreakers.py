@@ -27,7 +27,9 @@ FPS = 120
 BRICK_WIDTH, BRICK_HEIGHT = 50, 30
 BAR_WIDTH = 120
 BAR_HEIGHT = 20
+LONG_BAR_WIDTH = 200
 RED = (255, 0, 0)
+GREEN = (0, 200, 0)
 BLUE = (0, 0, 255)
 WHITE = (255, 255, 255)
 
@@ -40,6 +42,9 @@ game_start = False
 
 in_power_mode = False
 power_mode_timer = None
+
+in_length_mode = False
+length_mode_timer = None
 
 BG = pygame.transform.scale(pygame.image.load(os.path.join('Assets','background','city.jpg')),(WIDTH,HEIGHT))
 DING = pygame.mixer.Sound(os.path.join('Assets',"ding.mp3"))
@@ -125,7 +130,16 @@ class Prize(pygame.sprite.Sprite):
                 power_mode_timer.cancel()
             power_mode_timer = Timer(10, timeout)
             power_mode_timer.start()       
-                   
+        elif self.text == "L":
+            global in_length_mode, length_mode_timer
+            in_length_mode = True    
+            def timeout():
+                global in_length_mode
+                in_length_mode = False
+            if length_mode_timer != None:
+                length_mode_timer.cancel()
+            length_mode_timer = Timer(20, timeout)
+            length_mode_timer.start()   
                    
         
 
@@ -197,6 +211,8 @@ class Ball(pygame.sprite.Sprite):
                         prizeGroup.add(Prize((brick.rect.left, brick.rect.top), RED, "P"))
                     elif random.randint(0,100) < 10 and len(ballGroup) < 5 and not in_power_mode : # dropping prize
                         prizeGroup.add(Prize((brick.rect.left, brick.rect.top), BLUE, "M"))
+                    elif random.randint(0,100) < 7 and not in_length_mode : # dropping prize
+                        prizeGroup.add(Prize((brick.rect.left, brick.rect.top), GREEN, "L"))
                     brick.kill()
                     DING2.play()
                                            
@@ -242,9 +258,12 @@ class Bar(pygame.sprite.Sprite):
         super().__init__()
         self.color = (200, 200, 200)
         barSurface = pygame.Surface((BAR_WIDTH, BAR_HEIGHT))
-        self.image = self.drawBar(barSurface)
+        self.image_normal = self.drawBar(barSurface)
+        self.image_long = pygame.transform.scale(self.image_normal, (LONG_BAR_WIDTH, BAR_HEIGHT))
+        self.image = self.image_normal
         self.rect = pygame.Rect(pos[0], pos[1], BAR_WIDTH, BAR_HEIGHT)
         self.rect.center = pos
+        self.long_mode = False
 
     def drawBar(self, surface):
         surface.fill(self.color)
@@ -257,6 +276,20 @@ class Bar(pygame.sprite.Sprite):
         return surface
     
     def update(self):
+        if in_length_mode and not self.long_mode:
+            # add animation later
+            self.image = self.image_long
+            center = self.rect.center
+            self.rect = self.image_long.get_rect()
+            self.rect.center = center
+            self.long_mode = True
+        elif not in_length_mode and self.long_mode:
+            self.image = self.image_normal
+            center = self.rect.center
+            self.rect = self.image_normal.get_rect()
+            self.rect.center = center
+            self.long_mode = False
+            
         dx = bar_moving * BAR_VELOCITY
         if dx != 0 and self.rect.right + dx > WIDTH or self.rect.left + dx < 0:
             dx = 0
