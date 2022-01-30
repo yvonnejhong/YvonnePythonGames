@@ -53,7 +53,46 @@ class Tetromino():
     def __init__(self, color):
         self.center = Position(5,0)
         self.color = color
+        self.activeForm = 0
 
+
+    def get_blocks(self):
+        return self.forms[self.activeForm].blocks
+    
+    def draw(self, surface:pygame.Surface):
+        form = self.forms[self.activeForm]
+        for block in form.blocks:
+            cell = createCell(self.color)
+            surface.blit(cell,  (GAME_LEFT + block.x*SPACE, GAME_TOP+block.y*SPACE))
+
+    
+    def move_down(self, field):
+        form = self.forms[self.activeForm]
+        success = form.move_down(field)
+        if not success:
+            return False
+        for index,form in enumerate(self.forms):
+            if index != self.activeForm:
+                form.move_down(None)
+        return True
+
+    def move_left_right(self, field, direction):
+        form = self.forms[self.activeForm]
+        success = form.move_left_right(field, direction)
+        if not success:
+            return False
+        for index,form in enumerate(self.forms):
+            if index != self.activeForm:
+                form.move_left_right(None, direction)
+        return True
+
+    def rotate(self, field):
+        newForm = (self.activeForm + 1) % len(self.forms)
+        form = self.forms[newForm]
+        if form.move_left_right(field, 0):
+            self.activeForm = newForm
+            return True
+        return False
 class Form:
     def __init__(self, center:Position, block1:Position, block2:Position, block3:Position) -> None:
         self.blocks = [center, block1, block2, block3]
@@ -99,45 +138,63 @@ class LBlock(Tetromino):
             Form(self.center.clone(), Position(c.x, c.y+1), Position(c.x, c.y+2), Position(c.x-1, c.y)),
             Form(self.center.clone(), Position(c.x, c.y-1), Position(c.x-1, c.y), Position(c.x-2, c.y)),
         ]
-        self.activeForm = 0
 
-    def get_blocks(self):
-        return self.forms[self.activeForm].blocks
-    
-    def draw(self, surface:pygame.Surface):
-        form = self.forms[self.activeForm]
-        for block in form.blocks:
-            cell = createCell(self.color)
-            surface.blit(cell,  (GAME_LEFT + block.x*SPACE, GAME_TOP+block.y*SPACE))
+class IBlock(Tetromino):
+    def __init__(self, color):
+        super().__init__(color)
+        c = self.center
+        self.forms = [
+            Form(self.center.clone(), Position(c.x, c.y+1), Position(c.x, c.y-1), Position(c.x, c.y-2)),
+            Form(self.center.clone(), Position(c.x-1, c.y), Position(c.x+1, c.y), Position(c.x+2, c.y))
+        ]
 
-    
-    def move_down(self, field):
-        form = self.forms[self.activeForm]
-        success = form.move_down(field)
-        if not success:
-            return False
-        for index,form in enumerate(self.forms):
-            if index != self.activeForm:
-                form.move_down(None)
-        return True
+class LBlock(Tetromino):
+    def __init__(self, color):
+        super().__init__(color)
+        c = self.center
+        self.forms = [
+            Form(self.center.clone(), Position(c.x-1, c.y), Position(c.x, c.y-1), Position(c.x, c.y-2)),
+            Form(self.center.clone(), Position(c.x, c.y-1), Position(c.x+1, c.y), Position(c.x+2, c.y)),
+            Form(self.center.clone(), Position(c.x, c.y+1), Position(c.x, c.y+2), Position(c.x+1, c.y)),
+            Form(self.center.clone(), Position(c.x, c.y+1), Position(c.x-1, c.y), Position(c.x-2, c.y)),
+        ]
 
-    def move_left_right(self, field, direction):
-        form = self.forms[self.activeForm]
-        success = form.move_left_right(field, direction)
-        if not success:
-            return False
-        for index,form in enumerate(self.forms):
-            if index != self.activeForm:
-                form.move_left_right(None, direction)
-        return True
+class OBlock(Tetromino):
+    def __init__(self, color):
+        super().__init__(color)
+        c = self.center
+        self.forms = [
+            Form(self.center.clone(), Position(c.x-1, c.y), Position(c.x-1, c.y-1), Position(c.x, c.y-1))
+        ]
 
-    def rotate(self, field):
-        newForm = (self.activeForm + 1) % len(self.forms)
-        form = self.forms[newForm]
-        if form.move_left_right(field, 0):
-            self.activeForm = newForm
-            return True
-        return False
+class SBlock(Tetromino):
+    def __init__(self, color):
+        super().__init__(color)
+        c = self.center
+        self.forms = [
+            Form(self.center.clone(), Position(c.x, c.y-1), Position(c.x-1, c.y), Position(c.x+1, c.y-1)),
+            Form(self.center.clone(), Position(c.x, c.y-1), Position(c.x+1, c.y), Position(c.x+1, c.y+1))
+        ]
+
+class ZBlock(Tetromino):
+    def __init__(self, color):
+        super().__init__(color)
+        c = self.center
+        self.forms = [
+            Form(self.center.clone(), Position(c.x, c.y-1), Position(c.x-1, c.y-1), Position(c.x+1, c.y)),
+            Form(self.center.clone(), Position(c.x, c.y-1), Position(c.x-1, c.y), Position(c.x-1, c.y+1))
+        ]
+
+class TBlock(Tetromino):
+    def __init__(self, color):
+        super().__init__(color)
+        c = self.center
+        self.forms = [
+            Form(self.center.clone(), Position(c.x-1, c.y), Position(c.x+1, c.y), Position(c.x, c.y-1)),
+            Form(self.center.clone(), Position(c.x, c.y-1), Position(c.x, c.y+1), Position(c.x+1, c.y)),
+            Form(self.center.clone(), Position(c.x, c.y+1), Position(c.x-1, c.y), Position(c.x+1, c.y)),
+            Form(self.center.clone(), Position(c.x, c.y+1), Position(c.x, c.y-1), Position(c.x-1, c.y)),
+        ]
 
 class Tetris:
     def __init__(self, surface:pygame.Surface):
@@ -146,12 +203,21 @@ class Tetris:
         for i in range(NUM_COLUMN):
             self.field.append([-1]*NUM_ROW)
         
-        self.tetromino = LBlock((0,0,255))
+        self.items = Tetromino.__subclasses__()
+        self.items_count = len(self.items) - 1
+        self.tetromino = self.create_new_tetromino()
+
         self.drop_tick = pygame.time.get_ticks()
         self.operation_tick = pygame.time.get_ticks()
         self.rotate_tick = pygame.time.get_ticks()
         self.weld_timeout = 3
         self.last_fast_drop = 0
+
+
+    def create_new_tetromino(self):
+        
+        klass = self.items[random.randint(0, self.items_count)]
+        return klass((0, 0, 255))
 
     def update(self):
         new_ticks = pygame.time.get_ticks()
@@ -191,7 +257,7 @@ class Tetris:
                 if block.x >=0 and block.y >= 0:
                     self.field[block.x][block.y] = 1
             self.remove_full_line()
-            self.tetromino = LBlock((0,0,255))
+            self.tetromino = self.create_new_tetromino()
             self.weld_timeout = 3
         else:
             self.weld_timeout -= 1
