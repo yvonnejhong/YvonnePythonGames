@@ -203,8 +203,7 @@ class Tetris:
         for i in range(NUM_COLUMN):
             self.field.append([-1]*NUM_ROW)
         
-        self.items = Tetromino.__subclasses__()
-        self.items_count = len(self.items) - 1
+        self.init_random_list()
         self.tetromino = self.create_new_tetromino()
 
         self.drop_tick = pygame.time.get_ticks()
@@ -213,10 +212,26 @@ class Tetris:
         self.weld_timeout = 3
         self.last_fast_drop = 0
 
+    def init_random_list(self):
+        # although people wants random tetromino, their intention is actually slighly different.
+        # The real random value has repetition number by nature while people actually expect 
+        # some random number with less repetition
+
+        # let's hack here
+        self.items = []
+        for _ in range(3):
+            self.items += Tetromino.__subclasses__()
+        
+        random.shuffle(self.items)
+        # in this case, we will have max repetition of same object 3 times.
+
+        self.item_index = 0
 
     def create_new_tetromino(self):
-        
-        klass = self.items[random.randint(0, self.items_count)]
+        klass = self.items[self.item_index]
+        self.item_index += 1
+        if self.item_index == len(self.items):
+            self.init_random_list()
         return klass((0, 0, 255))
 
     def update(self):
