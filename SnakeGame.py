@@ -1,21 +1,13 @@
 import random
 import pygame
 from tkinter import messagebox
+from position import *
 
 LENGTH = 500
 ROW = 20
 SPACE = LENGTH // ROW
 
-class Position:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y     
-        
-    def clone(self):
-        return Position(self.x, self.y)
 
-    def equals(self, other):
-        return self.x == other.x and self.y == other.y
 
 class Cube:
     def __init__(self, pos, color = (0, 175, 0), eyes=False):

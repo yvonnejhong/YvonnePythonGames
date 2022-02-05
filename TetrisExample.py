@@ -17,7 +17,7 @@ GAME_TOP = (HEIGHT - GAME_HEIGHT) / 2
 
 OPERATION_TICK = 150
 
-COLOR_GRID = (0, 0, 0)
+COLOR_GRID = (200, 200, 200)
 COLOR_BOARD = (0, 0, 0)
 
 def adjustBrightness(color, value):

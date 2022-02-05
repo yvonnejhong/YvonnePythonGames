@@ -17,7 +17,7 @@ from threading import Timer
 import pygame
 import os
 import random
-
+from beautiful_brick import *
 pygame.init()
 
 WIDTH = 1200
@@ -57,13 +57,6 @@ BGM = [
 ]
 
 prize_font = pygame.font.SysFont(None, 25)
-
-def adjustBrightness(color, value):
-    r = max(0, min(255, color[0] + value))
-    g = max(0, min(255, color[1] + value))
-    b = max(0, min(255, color[2] + value))
-
-    return (r, g, b)
 
 brickGroup = pygame.sprite.Group()    
 ballGroup = pygame.sprite.Group()    
@@ -149,21 +142,9 @@ class Brick(pygame.sprite.Sprite):
         self.pos = pos
         self.color = color
         self.health = health
-        brickSurface = pygame.Surface((BRICK_WIDTH, BRICK_HEIGHT))
-        self.image = self.drawBrick(brickSurface)
+        self.image = create_brick(BRICK_WIDTH, BRICK_HEIGHT, self.color)
         self.rect = pygame.Rect(pos[0], pos[1], BRICK_WIDTH, BRICK_HEIGHT)
         self.is_breakable = True
-
-
-    def drawBrick(self, surface):
-        surface.fill(self.color)
-        highlight = adjustBrightness(self.color, 150)
-        pygame.draw.line(surface, highlight, (0,0), (0, BRICK_HEIGHT), 5)
-        pygame.draw.line(surface, highlight, (0,0), (BRICK_WIDTH, 0), 5)
-        shadow = adjustBrightness(self.color, -150)
-        pygame.draw.line(surface, shadow, (0, BRICK_HEIGHT), (BRICK_WIDTH, BRICK_HEIGHT), 5)
-        pygame.draw.line(surface, shadow, (BRICK_WIDTH, 0), (BRICK_WIDTH, BRICK_HEIGHT), 5)
-        return surface
 
 class NonBreakableBrick(Brick):
     def __init__(self, pos):
