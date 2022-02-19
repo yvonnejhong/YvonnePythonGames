@@ -97,8 +97,8 @@ class Snake:
         
 def drawGrid(surface):
     for i in range(ROW):
-        pygame.draw.line(surface,(0, 0, 0), (0, SPACE * i), (LENGTH, SPACE * i))
-        pygame.draw.line(surface,(0, 0, 0), (SPACE * i, 0), (SPACE * i, LENGTH))
+        pygame.draw.line(surface,(200, 200, 200), (0, SPACE * i), (LENGTH, SPACE * i))
+        pygame.draw.line(surface,(200, 200, 200), (SPACE * i, 0), (SPACE * i, LENGTH))
              
 
 def redrawWindow(surface, snake, apple):

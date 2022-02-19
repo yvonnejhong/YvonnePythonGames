@@ -1,4 +1,6 @@
 import random
+from tkinter import Y
+from unittest import TestResult
 import pygame
 import os
 from position import *
@@ -24,10 +26,22 @@ class OBlock:
             s = create_brick(SPACE, SPACE, self.color)
             surface.blit(s, (GAME_LEFT + block.x * SPACE, GAME_TOP + block.y * SPACE))
             
-    def move_down(self):
+    def move_down(self, field):
         for block in self.blocks:
+            if block.y + 1 >= NUM_ROW or field[block.y + 1][block.x] > -1: 
+                return False
+        for block in self.blocks:    
             block.y += 1
-                    
+        return True
+    
+    def move_left_or_right(self, field, direction):
+        for block in self.blocks:
+            if block.x + direction >= NUM_COLUMN or block.x + direction < 0 or field[block.y][block.x + direction] > -1:
+                return False
+        for block in self.blocks:
+            block.x += direction
+        return True
+            
 class Tetris:
     def __init__(self, surface:pygame.Surface):
         self.surface = surface
@@ -39,7 +53,8 @@ class Tetris:
             self.field.append(row)
             
         self.tetrimino = OBlock()
-        
+        self.move_down_tick = pygame.time.get_ticks()
+        self.move_left_or_right_tick = pygame.time.get_ticks()
 
     def drawGrid(self):
         for i in range(NUM_ROW):
@@ -52,8 +67,24 @@ class Tetris:
         pygame.draw.rect(self.surface, (0, 0, 0), pygame.Rect(GAME_LEFT, GAME_TOP, GAME_WIDTH, GAME_HEIGHT), 3)
 
     def update(self):
-        self.tetrimino.move_down()
-                
+        # check key press and pass to tetrimino
+        
+        current_tick = pygame.time.get_ticks()
+        if current_tick - self.move_left_or_right_tick > 50:  
+            keys_pressed = pygame.key.get_pressed()
+            if keys_pressed[pygame.K_LEFT]:
+                self.tetrimino.move_left_or_right(self.field, -1) 
+            elif keys_pressed[pygame.K_RIGHT]:
+                self.tetrimino.move_left_or_right(self.field, 1)
+            self.move_left_or_right_tick = current_tick
+    
+        if current_tick - self.move_down_tick > 300:   
+            if self.tetrimino.move_down(self.field) == False:
+                for block in self.tetrimino.blocks:
+                    self.field[block.y][block.x] = 1  
+                self.tetrimino = OBlock()
+            self.move_down_tick = current_tick
+            
     def draw(self):
         self.surface.fill((255, 255, 255))
         self.drawGrid()
@@ -73,11 +104,11 @@ def main():
     run = True
     while run:
         #pygame.time.delay(100)
-        clock.tick(10)
+        clock.tick(60)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
         tetris.update()
         tetris.draw()    
-        
+
 main()
