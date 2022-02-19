@@ -1,6 +1,4 @@
 import random
-from tkinter import Y
-from unittest import TestResult
 import pygame
 import os
 from position import *
@@ -70,7 +68,7 @@ class Tetris:
         # check key press and pass to tetrimino
         
         current_tick = pygame.time.get_ticks()
-        if current_tick - self.move_left_or_right_tick > 50:  
+        if current_tick - self.move_left_or_right_tick > 100:  
             keys_pressed = pygame.key.get_pressed()
             if keys_pressed[pygame.K_LEFT]:
                 self.tetrimino.move_left_or_right(self.field, -1) 
