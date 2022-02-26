@@ -93,6 +93,7 @@ class Tetromino():
             self.activeForm = newForm
             return True
         return False
+    
 class Form:
     def __init__(self, center:Position, block1:Position, block2:Position, block3:Position) -> None:
         self.blocks = [center, block1, block2, block3]

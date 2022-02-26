@@ -36,13 +36,10 @@ SPACE = pygame.transform.scale(pygame.image.load(os.path.join('Assets','space.pn
 pygame.display.set_caption("Spaceship Game")
 
 def handle_bullet(yellow_bullets, red_bullets, yellow, red):
-    for bullet in yellow_bullets:
-        bullet.x += BULLET_VEL
-        if red.colliderect(bullet):
-            yellow_bullets.remove(bullet)
-            pygame.event.post(pygame.event.Event(RED_HIT))
-        if bullet.x > WIDTH:
-            yellow_bullets.remove(bullet)
+    handle_yellow_bullet(yellow_bullets, red)
+    handle_red_bullet(red_bullets, yellow)
+
+def handle_red_bullet(red_bullets, yellow):
     for bullet in red_bullets:
         bullet.x -= BULLET_VEL
         if yellow.colliderect(bullet):
@@ -50,6 +47,15 @@ def handle_bullet(yellow_bullets, red_bullets, yellow, red):
             pygame.event.post(pygame.event.Event(YELLOW_HIT))
         if bullet.x < 0:
             red_bullets.remove(bullet)
+
+def handle_yellow_bullet(yellow_bullets, red):
+    for bullet in yellow_bullets:
+        bullet.x += BULLET_VEL
+        if red.colliderect(bullet):
+            yellow_bullets.remove(bullet)
+            pygame.event.post(pygame.event.Event(RED_HIT))
+        if bullet.x > WIDTH:
+            yellow_bullets.remove(bullet)
 
 def handle_yellow_movement(keys_pressed, yellow):
     if keys_pressed[pygame.K_a] and yellow.x - VEL > 0:
