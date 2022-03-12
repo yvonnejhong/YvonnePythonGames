@@ -1,3 +1,4 @@
+from calendar import c
 import random
 import pygame
 import os
@@ -53,9 +54,24 @@ class JBlock(Tetrimino):
             
 class LBlock(Tetrimino):
     def __init__(self):
-        self.blocks = [Position(4, 0), Position(4, 1), Position(4, 2), Position(5, 2)]
+        self.blocks = [Position(4, 1), Position(4, 2), Position(4, 3), Position(5, 3)]
         self.color = (255, 179, 38)            
             
+class SBlock(Tetrimino):
+    def __init__(self):
+        self.blocks = [Position(5, 0), Position(6, 0), Position(4, 1), Position(5, 1)]
+        self.color = (63, 182, 62)       
+ 
+class ZBlock(Tetrimino):
+    def __init__(self):
+        self.blocks = [Position(4, 0), Position(5, 0), Position(5, 1), Position(6, 1)]
+        self.color = (236, 32, 42)
+        
+class TBlock(Tetrimino):
+    def __init__(self):
+        self.blocks = [Position(4, 0), Position(5, 0), Position(6, 0), Position(5, 1)]
+        self.color = (181, 81, 162)
+                    
 class Tetris:
     def __init__(self, surface:pygame.Surface):
         self.surface = surface
@@ -78,7 +94,7 @@ class Tetris:
             self.next_queue += Tetrimino.__subclasses__()
             random.shuffle(self.next_queue)
         self.tetrimino = self.next_queue.pop(0)()
-
+        #self.tetrimino = OBlock()
     def drawGrid(self):
         for i in range(NUM_ROW):
             pygame.draw.line(self.surface,(0, 0, 0), (GAME_LEFT, SPACE * i + GAME_TOP), (GAME_LEFT + GAME_WIDTH, SPACE * i + GAME_TOP))
@@ -104,9 +120,31 @@ class Tetris:
     def handle_down_movement(self):
         if self.tetrimino.move_down(self.field) == False:
             for block in self.tetrimino.blocks:
-                self.field[block.y][block.x] = self.tetrimino.color  
+                self.field[block.y][block.x] = self.tetrimino.color
+            self.remove_lines()  
             self.create_tetrimino()
 
+    def remove_lines(self):
+        for _ in range(4):
+            for i in range(NUM_ROW-1, 0, -1):
+                if self.is_full_line(self.field[i]):
+                    self.copy_rows_above(i)
+                
+    def copy_rows_above(self, start_line):
+        for i in range(start_line, 0, -1): 
+            self.copy_one_row_above(i)
+        self.initialize_first_row()
+    def copy_one_row_above(self, i):
+        for c in range(NUM_COLUMN):
+            self.field[i][c] = self.field[i-1][c]
+    def is_full_line(self, row):
+        for cell in row:
+            if cell == (-1, -1, -1):
+                return False
+        return True 
+    def initialize_first_row(self):
+        for a in range(NUM_COLUMN):
+            self.field[0][a] = (-1, -1, -1 )
     def handle_left_right_movement(self):
         keys_pressed = pygame.key.get_pressed()
         if keys_pressed[pygame.K_LEFT]:
