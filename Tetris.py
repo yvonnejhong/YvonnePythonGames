@@ -36,6 +36,42 @@ class Tetrimino:
         for block in self.blocks:
             block.x += direction
         return True
+    
+    def rotate(self,field):
+        center = self.blocks[1]
+        for block in self.blocks:
+            # Step 1: move to center
+            newx = block.x-center.x
+            newy = block.y-center.y
+       
+            # Step 2: rotate
+            newx2 = -newy 
+            newy2 = newx
+            # Step 3: move back
+            newx3 = newx2 + center.x
+            newy3 = newy2 + center.y
+            
+            if newx3 >= NUM_COLUMN or newx3 < 0  or newy3 >= NUM_ROW or \
+            field[newy3][newx3][0] > -1:
+                return False
+        for block in self.blocks:
+            # Step 1: move to center
+            newx = block.x-center.x
+            newy = block.y-center.y
+            
+            # Step 2: rotate
+            #rotation matrix
+            #|cosA -sinA| |x| = |xcosA - ysinA|
+            #|sinA  cosA| |y|   |xsinA + ycosA|
+            # when A=90 the rotation matrix becomes:
+            # (x,y) => (-y, x)
+            newx2 = -newy 
+            newy2 = newx
+            # Step 3: move back
+            block.x = newx2 + center.x
+            block.y = newy2 + center.y
+            
+            
 
 class IBlock(Tetrimino):
     def __init__(self):
@@ -86,6 +122,7 @@ class Tetris:
         self.create_tetrimino() 
         self.move_down_tick = pygame.time.get_ticks()
         self.move_left_or_right_tick = pygame.time.get_ticks()
+        self.rotate_tick = pygame.time.get_ticks()
         
 
     def create_tetrimino(self):
@@ -113,9 +150,13 @@ class Tetris:
             self.handle_left_right_movement()
             self.move_left_or_right_tick = current_tick
     
-        if current_tick - self.move_down_tick > 150:   
+        if current_tick - self.move_down_tick > 200:   
             self.handle_down_movement()
             self.move_down_tick = current_tick
+            
+        if current_tick - self.rotate_tick > 100:  
+            self.handle_rotate()
+            self.rotate_tick = current_tick
 
     def handle_down_movement(self):
         if self.tetrimino.move_down(self.field) == False:
@@ -152,6 +193,11 @@ class Tetris:
         elif keys_pressed[pygame.K_RIGHT]:
             self.tetrimino.move_left_or_right(self.field, 1)
             
+    def handle_rotate(self):
+        keys_pressed = pygame.key.get_pressed()
+        if keys_pressed[pygame.K_SPACE]:
+            self.tetrimino.rotate(self.field) 
+               
     def draw(self):
         self.surface.fill((255, 255, 255))
         self.drawGrid()
