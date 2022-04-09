@@ -5,6 +5,7 @@ import os
 from position import *
 from beautiful_brick import *
 
+pygame.mixer.init()
 WIDTH = 960
 HEIGHT = 720
 SPACE = 30
@@ -14,7 +15,8 @@ GAME_WIDTH = SPACE * NUM_COLUMN
 GAME_HEIGHT = SPACE * NUM_ROW
 GAME_TOP = (HEIGHT - GAME_HEIGHT)/2
 GAME_LEFT = (WIDTH - GAME_WIDTH)/2
-
+BGM = pygame.mixer.Sound(os.path.join('Assets',"bgm","Tetris Music.mp3"))
+SPACE_BG = pygame.transform.scale(pygame.image.load(os.path.join('Assets','space.png')),(WIDTH,HEIGHT))
 class Tetrimino:
     def draw(self, surface):
         for block in self.blocks:
@@ -123,8 +125,8 @@ class Tetris:
         self.move_down_tick = pygame.time.get_ticks()
         self.move_left_or_right_tick = pygame.time.get_ticks()
         self.rotate_tick = pygame.time.get_ticks()
-        
-
+        self.hard_drop_tick = pygame.time.get_ticks()
+        self.fast_move_down_tick = pygame.time.get_ticks()
     def create_tetrimino(self):
         if len(self.next_queue) == 0:
             self.next_queue += Tetrimino.__subclasses__()
@@ -146,24 +148,28 @@ class Tetris:
         # check key press and pass to tetrimino
         
         current_tick = pygame.time.get_ticks()
-        if current_tick - self.move_left_or_right_tick > 100:  
+        if current_tick - self.move_left_or_right_tick > 150:  
             self.handle_left_right_movement()
             self.move_left_or_right_tick = current_tick
     
-        if current_tick - self.move_down_tick > 200:   
+        if current_tick - self.move_down_tick > 300:   
             self.handle_down_movement()
             self.move_down_tick = current_tick
             
         if current_tick - self.rotate_tick > 100:  
             self.handle_rotate()
             self.rotate_tick = current_tick
-
+            
+        if current_tick - self.hard_drop_tick > 100:  
+            self.handle_hard_drop()
+            self.hard_drop_tick = current_tick
+        
+        if current_tick - self.fast_move_down_tick > 100:  
+            self.handle_fast_move_down()
+            self.fast_move_down_tick = current_tick
     def handle_down_movement(self):
         if self.tetrimino.move_down(self.field) == False:
-            for block in self.tetrimino.blocks:
-                self.field[block.y][block.x] = self.tetrimino.color
-            self.remove_lines()  
-            self.create_tetrimino()
+            self.connect()
 
     def remove_lines(self):
         for _ in range(4):
@@ -198,6 +204,25 @@ class Tetris:
         if keys_pressed[pygame.K_SPACE]:
             self.tetrimino.rotate(self.field) 
                
+    def handle_hard_drop(self):
+        keys_pressed = pygame.key.get_pressed()
+        if keys_pressed[pygame.K_UP]:
+            while self.tetrimino.move_down(self.field):
+                pass
+            self.connect()
+            
+    def handle_fast_move_down(self):
+        keys_pressed = pygame.key.get_pressed()
+        if keys_pressed[pygame.K_DOWN]:
+           self.tetrimino.move_down(self.field)
+
+
+    def connect(self):
+        for block in self.tetrimino.blocks:
+            self.field[block.y][block.x] = self.tetrimino.color
+            self.remove_lines()  
+        self.create_tetrimino()
+        
     def draw(self):
         self.surface.fill((255, 255, 255))
         self.drawGrid()
@@ -215,6 +240,7 @@ def main():
     tetris = Tetris(window)
     clock = pygame.time.Clock()
     run = True
+    BGM.play()
     while run:
         #pygame.time.delay(100)
         clock.tick(60)

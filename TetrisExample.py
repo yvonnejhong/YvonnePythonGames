@@ -237,7 +237,7 @@ class Tetris:
 
     def update(self):
         new_ticks = pygame.time.get_ticks()
-        if new_ticks - self.drop_tick > 300:
+        if new_ticks - self.drop_tick > 150:
             if not self.tetromino.move_down(self.field):
                 self.weld_tetromino()
             self.drop_tick = new_ticks
