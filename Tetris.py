@@ -1,4 +1,3 @@
-from calendar import c
 import random
 import pygame
 import os
@@ -16,13 +15,26 @@ GAME_HEIGHT = SPACE * NUM_ROW
 GAME_TOP = (HEIGHT - GAME_HEIGHT)/2
 GAME_LEFT = (WIDTH - GAME_WIDTH)/2
 BGM = pygame.mixer.Sound(os.path.join('Assets',"bgm","Tetris Music.mp3"))
-SPACE_BG = pygame.transform.scale(pygame.image.load(os.path.join('Assets','space.png')),(WIDTH,HEIGHT))
+SPACE_BG = pygame.transform.scale(pygame.image.load(os.path.join('Assets','tetris.jpg')),(WIDTH,HEIGHT))
+
+COLOR = (210, 210, 210)
+
 class Tetrimino:
+    def __init__(self) -> None:
+        self.TOP_OFFSET = 15
+        self.LEFT_OFFSET = 222
+        
     def draw(self, surface):
         for block in self.blocks:
             s = create_brick(SPACE, SPACE, self.color)
             surface.blit(s, (GAME_LEFT + block.x * SPACE, GAME_TOP + block.y * SPACE))
-            
+    
+    def draw_on_right(self, surface):
+        for block in self.blocks:
+            s = create_brick(SPACE, SPACE, self.color)
+            surface.blit(s, (GAME_LEFT + self.LEFT_OFFSET + block.x * SPACE, GAME_TOP + block.y * SPACE + self.TOP_OFFSET))
+                        
+           
     def move_down(self, field):
         for block in self.blocks:
             if block.y + 1 >= NUM_ROW or field[block.y + 1][block.x][0] > -1: 
@@ -72,44 +84,61 @@ class Tetrimino:
             # Step 3: move back
             block.x = newx2 + center.x
             block.y = newy2 + center.y
+        
             
-            
-
 class IBlock(Tetrimino):
     def __init__(self):
+        super().__init__()
         self.blocks = [Position(4, 0), Position(4, 1), Position(4, 2), Position(4, 3)]
         self.color = (64, 202, 233)
-        
+        self.LEFT_OFFSET += 34
+        self.TOP_OFFSET += 24        
 class OBlock(Tetrimino):
     def __init__(self):
+        super().__init__()
         self.blocks = [Position(4, 0), Position(5, 0), Position(4, 1), Position(5, 1)]
         self.color = (255, 215, 0)
-        
+        self.LEFT_OFFSET += 22
+        self.TOP_OFFSET += 50
 class JBlock(Tetrimino):
     def __init__(self):
+        super().__init__()
         self.blocks = [Position(5, 0), Position(5, 1), Position(5, 2), Position(4, 2)]
         self.color = (101, 121, 197) 
-            
+        self.LEFT_OFFSET += 22
+        self.TOP_OFFSET += 40
+                    
 class LBlock(Tetrimino):
     def __init__(self):
+        super().__init__()
         self.blocks = [Position(4, 1), Position(4, 2), Position(4, 3), Position(5, 3)]
         self.color = (255, 179, 38)            
-            
+        self.LEFT_OFFSET += 22
+        self.TOP_OFFSET += 10
+                    
 class SBlock(Tetrimino):
     def __init__(self):
+        super().__init__()
         self.blocks = [Position(5, 0), Position(6, 0), Position(4, 1), Position(5, 1)]
         self.color = (63, 182, 62)       
- 
+        self.LEFT_OFFSET += 4
+        self.TOP_OFFSET += 52
+        
 class ZBlock(Tetrimino):
     def __init__(self):
+        super().__init__()
         self.blocks = [Position(4, 0), Position(5, 0), Position(5, 1), Position(6, 1)]
         self.color = (236, 32, 42)
-        
+        self.LEFT_OFFSET += 4
+        self.TOP_OFFSET += 52
 class TBlock(Tetrimino):
     def __init__(self):
+        super().__init__()
         self.blocks = [Position(4, 0), Position(5, 0), Position(6, 0), Position(5, 1)]
         self.color = (181, 81, 162)
-                    
+        self.LEFT_OFFSET += 6
+        self.TOP_OFFSET += 54
+                            
 class Tetris:
     def __init__(self, surface:pygame.Surface):
         self.surface = surface
@@ -127,22 +156,25 @@ class Tetris:
         self.rotate_tick = pygame.time.get_ticks()
         self.hard_drop_tick = pygame.time.get_ticks()
         self.fast_move_down_tick = pygame.time.get_ticks()
+        
     def create_tetrimino(self):
-        if len(self.next_queue) == 0:
+        if len(self.next_queue) < 10:
             self.next_queue += Tetrimino.__subclasses__()
             self.next_queue += Tetrimino.__subclasses__()
             random.shuffle(self.next_queue)
         self.tetrimino = self.next_queue.pop(0)()
-        #self.tetrimino = OBlock()
+        self.next_on_the_right = self.next_queue[0]()
+        
     def drawGrid(self):
         for i in range(NUM_ROW):
-            pygame.draw.line(self.surface,(0, 0, 0), (GAME_LEFT, SPACE * i + GAME_TOP), (GAME_LEFT + GAME_WIDTH, SPACE * i + GAME_TOP))
+            pygame.draw.line(self.surface,COLOR, (GAME_LEFT, SPACE * i + GAME_TOP), (GAME_LEFT + GAME_WIDTH, SPACE * i + GAME_TOP))
 
         
         for i in range(NUM_COLUMN):
-            pygame.draw.line(self.surface,(0, 0, 0), (GAME_LEFT + SPACE * i, GAME_TOP), (GAME_LEFT + SPACE * i, GAME_HEIGHT + GAME_TOP))
+            pygame.draw.line(self.surface,COLOR, (GAME_LEFT + SPACE * i, GAME_TOP), (GAME_LEFT + SPACE * i, GAME_HEIGHT + GAME_TOP))
 
-        pygame.draw.rect(self.surface, (0, 0, 0), pygame.Rect(GAME_LEFT, GAME_TOP, GAME_WIDTH, GAME_HEIGHT), 3)
+        pygame.draw.rect(self.surface, COLOR, pygame.Rect(GAME_LEFT, GAME_TOP, GAME_WIDTH, GAME_HEIGHT), 3)
+        
 
     def update(self):
         # check key press and pass to tetrimino
@@ -160,13 +192,14 @@ class Tetris:
             self.handle_rotate()
             self.rotate_tick = current_tick
             
-        if current_tick - self.hard_drop_tick > 100:  
+        if current_tick - self.hard_drop_tick > 180:  
             self.handle_hard_drop()
             self.hard_drop_tick = current_tick
         
         if current_tick - self.fast_move_down_tick > 100:  
             self.handle_fast_move_down()
             self.fast_move_down_tick = current_tick
+            
     def handle_down_movement(self):
         if self.tetrimino.move_down(self.field) == False:
             self.connect()
@@ -224,7 +257,7 @@ class Tetris:
         self.create_tetrimino()
         
     def draw(self):
-        self.surface.fill((255, 255, 255))
+        self.surface.blit(SPACE_BG,(0,0))
         self.drawGrid()
         for r in range(NUM_ROW):
             for c in range(NUM_COLUMN):
@@ -232,6 +265,9 @@ class Tetris:
                     s = create_brick(SPACE, SPACE, self.field[r][c])
                     self.surface.blit(s, (GAME_LEFT + c * SPACE, GAME_TOP + r * SPACE))
         self.tetrimino.draw(self.surface)
+        pygame.draw.rect(self.surface, COLOR, pygame.Rect(GAME_LEFT + GAME_WIDTH + 25, GAME_TOP + 30 , 135, 135), 3)
+        self.next_on_the_right.draw_on_right(self.surface)
+
         pygame.display.update()            
 
 def main():
