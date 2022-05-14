@@ -195,32 +195,32 @@ class Tetris:
         # check key press and pass to tetrimino
         
         current_tick = pygame.time.get_ticks()
+        keys_pressed = pygame.key.get_pressed()
         if current_tick - self.move_left_or_right_tick > 150:  
-            self.handle_left_right_movement()
+            self.handle_left_right_movement(keys_pressed)
             self.move_left_or_right_tick = current_tick
     
         if current_tick - self.move_down_tick > 300:   
-            self.handle_down_movement()
+            self.handle_down_movement(keys_pressed)
             self.move_down_tick = current_tick
             
         if current_tick - self.rotate_tick > 100:  
-            self.handle_rotate()
+            self.handle_rotate(keys_pressed)
             self.rotate_tick = current_tick
             
         if current_tick - self.hard_drop_tick > 180:  
-            self.handle_hard_drop()
+            self.handle_hard_drop(keys_pressed)
             self.hard_drop_tick = current_tick
         
         if current_tick - self.fast_move_down_tick > 100:  
-            self.handle_fast_move_down()
+            self.handle_fast_move_down(keys_pressed)
             self.fast_move_down_tick = current_tick
 
         if current_tick - self.hold_tick > 100:  
-            self.handle_hold()
+            self.handle_hold(keys_pressed)
             self.hold_tick = current_tick 
             
-    def handle_hold(self):
-        keys_pressed = pygame.key.get_pressed()
+    def handle_hold(self, keys_pressed):
         if keys_pressed[pygame.K_LCTRL]:
             if self.swapped == True:
                 return
@@ -235,7 +235,7 @@ class Tetris:
             self.tetrimino.reset()
             self.swapped = True
         
-    def handle_down_movement(self):
+    def handle_down_movement(self, keys_pressed):
         if self.tetrimino.move_down(self.field) == False:
             self.connect()
 
@@ -249,38 +249,38 @@ class Tetris:
         for i in range(start_line, 0, -1): 
             self.copy_one_row_above(i)
         self.initialize_first_row()
+        
     def copy_one_row_above(self, i):
         for c in range(NUM_COLUMN):
             self.field[i][c] = self.field[i-1][c]
+            
     def is_full_line(self, row):
         for cell in row:
             if cell == (-1, -1, -1):
                 return False
         return True 
+    
     def initialize_first_row(self):
         for a in range(NUM_COLUMN):
-            self.field[0][a] = (-1, -1, -1 )
-    def handle_left_right_movement(self):
-        keys_pressed = pygame.key.get_pressed()
+            self.field[0][a] = (-1, -1, -1)
+            
+    def handle_left_right_movement(self, keys_pressed):
         if keys_pressed[pygame.K_LEFT]:
             self.tetrimino.move_left_or_right(self.field, -1) 
         elif keys_pressed[pygame.K_RIGHT]:
             self.tetrimino.move_left_or_right(self.field, 1)
             
-    def handle_rotate(self):
-        keys_pressed = pygame.key.get_pressed()
+    def handle_rotate(self, keys_pressed):
         if keys_pressed[pygame.K_SPACE]:
             self.tetrimino.rotate(self.field) 
                
-    def handle_hard_drop(self):
-        keys_pressed = pygame.key.get_pressed()
+    def handle_hard_drop(self, keys_pressed):
         if keys_pressed[pygame.K_UP]:
             while self.tetrimino.move_down(self.field):
                 pass
             self.connect()
             
-    def handle_fast_move_down(self):
-        keys_pressed = pygame.key.get_pressed()
+    def handle_fast_move_down(self, keys_pressed):
         if keys_pressed[pygame.K_DOWN]:
            self.tetrimino.move_down(self.field)
 
@@ -288,7 +288,7 @@ class Tetris:
     def connect(self):
         for block in self.tetrimino.blocks:
             self.field[block.y][block.x] = self.tetrimino.color
-            self.remove_lines()  
+        self.remove_lines()  
         self.create_tetrimino()
         
     def draw(self):
