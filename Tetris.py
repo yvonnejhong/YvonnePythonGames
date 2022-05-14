@@ -1,9 +1,11 @@
 import random
+from re import A
 import pygame
 import os
 from position import *
 from beautiful_brick import *
 
+pygame.font.init()
 pygame.mixer.init()
 WIDTH = 960
 HEIGHT = 720
@@ -16,6 +18,8 @@ GAME_TOP = (HEIGHT - GAME_HEIGHT)/2
 GAME_LEFT = (WIDTH - GAME_WIDTH)/2
 BGM = pygame.mixer.Sound(os.path.join('Assets',"bgm","Tetris Music.mp3"))
 SPACE_BG = pygame.transform.scale(pygame.image.load(os.path.join('Assets','tetris.jpg')),(WIDTH,HEIGHT))
+
+NEXT_FONT = pygame.font.SysFont('comicsans',30)
 
 COLOR = (210, 210, 210)
 
@@ -33,8 +37,15 @@ class Tetrimino:
         for block in self.blocks:
             s = create_brick(SPACE, SPACE, self.color)
             surface.blit(s, (GAME_LEFT + self.LEFT_OFFSET + block.x * SPACE, GAME_TOP + block.y * SPACE + self.TOP_OFFSET))
-                        
-           
+               
+    def draw_on_left(self, surface):
+        for block in self.blocks:
+            s = create_brick(SPACE, SPACE, self.color)
+            surface.blit(s, (GAME_LEFT + self.LEFT_OFFSET + block.x * SPACE - GAME_WIDTH - 50 - 135, GAME_TOP + block.y * SPACE + self.TOP_OFFSET))                    
+    
+    def reset(self):
+        self.__init__()
+        
     def move_down(self, field):
         for block in self.blocks:
             if block.y + 1 >= NUM_ROW or field[block.y + 1][block.x][0] > -1: 
@@ -156,6 +167,9 @@ class Tetris:
         self.rotate_tick = pygame.time.get_ticks()
         self.hard_drop_tick = pygame.time.get_ticks()
         self.fast_move_down_tick = pygame.time.get_ticks()
+        self.hold_tick = pygame.time.get_ticks()
+        self.hold = None
+        self.swapped = False 
         
     def create_tetrimino(self):
         if len(self.next_queue) < 10:
@@ -164,6 +178,7 @@ class Tetris:
             random.shuffle(self.next_queue)
         self.tetrimino = self.next_queue.pop(0)()
         self.next_on_the_right = self.next_queue[0]()
+        self.swapped = False
         
     def drawGrid(self):
         for i in range(NUM_ROW):
@@ -199,7 +214,27 @@ class Tetris:
         if current_tick - self.fast_move_down_tick > 100:  
             self.handle_fast_move_down()
             self.fast_move_down_tick = current_tick
+
+        if current_tick - self.hold_tick > 100:  
+            self.handle_hold()
+            self.hold_tick = current_tick 
             
+    def handle_hold(self):
+        keys_pressed = pygame.key.get_pressed()
+        if keys_pressed[pygame.K_LCTRL]:
+            if self.swapped == True:
+                return
+            if self.hold == None:
+                self.hold = self.tetrimino
+                self.create_tetrimino()            
+            else:
+                temp = self.tetrimino
+                self.tetrimino = self.hold
+                self.hold = temp
+            self.hold.reset()
+            self.tetrimino.reset()
+            self.swapped = True
+        
     def handle_down_movement(self):
         if self.tetrimino.move_down(self.field) == False:
             self.connect()
@@ -259,6 +294,10 @@ class Tetris:
     def draw(self):
         self.surface.blit(SPACE_BG,(0,0))
         self.drawGrid()
+        next_word = NEXT_FONT.render("Next:", 1, COLOR)
+        self.surface.blit(next_word,(GAME_LEFT + GAME_WIDTH + 25, GAME_TOP - 15))
+        hold_word = NEXT_FONT.render("Hold:", 1, COLOR)
+        self.surface.blit(hold_word,(GAME_LEFT - 160,GAME_TOP - 15))
         for r in range(NUM_ROW):
             for c in range(NUM_COLUMN):
                 if self.field[r][c][0] > -1:
@@ -266,8 +305,10 @@ class Tetris:
                     self.surface.blit(s, (GAME_LEFT + c * SPACE, GAME_TOP + r * SPACE))
         self.tetrimino.draw(self.surface)
         pygame.draw.rect(self.surface, COLOR, pygame.Rect(GAME_LEFT + GAME_WIDTH + 25, GAME_TOP + 30 , 135, 135), 3)
+        pygame.draw.rect(self.surface, COLOR, pygame.Rect(GAME_LEFT - 160, GAME_TOP + 30 , 135, 135), 3)
         self.next_on_the_right.draw_on_right(self.surface)
-
+        if self.hold != None:
+            self.hold.draw_on_left(self.surface)    
         pygame.display.update()            
 
 def main():
