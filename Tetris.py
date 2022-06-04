@@ -1,5 +1,4 @@
 import random
-from re import A
 import pygame
 import os
 from position import *
@@ -20,6 +19,7 @@ BGM = pygame.mixer.Sound(os.path.join('Assets',"bgm","Tetris Music.mp3"))
 SPACE_BG = pygame.transform.scale(pygame.image.load(os.path.join('Assets','tetris.jpg')),(WIDTH,HEIGHT))
 
 NEXT_FONT = pygame.font.SysFont('comicsans',30)
+LOSE_FONT = pygame.font.SysFont('comicsans', 100)
 
 COLOR = (210, 210, 210)
 
@@ -53,7 +53,12 @@ class Tetrimino:
         for block in self.blocks:    
             block.y += 1
         return True
-    
+
+    def is_movable(self, field):
+        for block in self.blocks:
+            if block.y + 1 >= NUM_ROW or field[block.y + 1][block.x][0] > -1: 
+                return False
+        return True
     def move_left_or_right(self, field, direction):
         for block in self.blocks:
             if block.x + direction >= NUM_COLUMN or block.x + direction < 0 or field[block.y][block.x + direction][0] > -1:
@@ -169,7 +174,8 @@ class Tetris:
         self.fast_move_down_tick = pygame.time.get_ticks()
         self.hold_tick = pygame.time.get_ticks()
         self.hold = None
-        self.swapped = False 
+        self.swapped = False
+        self.died = False 
         
     def create_tetrimino(self):
         if len(self.next_queue) < 10:
@@ -177,13 +183,14 @@ class Tetris:
             self.next_queue += Tetrimino.__subclasses__()
             random.shuffle(self.next_queue)
         self.tetrimino = self.next_queue.pop(0)()
+        if self.tetrimino.is_movable(self.field) == False:
+            self.died = True
         self.next_on_the_right = self.next_queue[0]()
         self.swapped = False
         
     def drawGrid(self):
         for i in range(NUM_ROW):
             pygame.draw.line(self.surface,COLOR, (GAME_LEFT, SPACE * i + GAME_TOP), (GAME_LEFT + GAME_WIDTH, SPACE * i + GAME_TOP))
-
         
         for i in range(NUM_COLUMN):
             pygame.draw.line(self.surface,COLOR, (GAME_LEFT + SPACE * i, GAME_TOP), (GAME_LEFT + SPACE * i, GAME_HEIGHT + GAME_TOP))
@@ -193,7 +200,8 @@ class Tetris:
 
     def update(self):
         # check key press and pass to tetrimino
-        
+        if self.died:
+            return
         current_tick = pygame.time.get_ticks()
         keys_pressed = pygame.key.get_pressed()
         if current_tick - self.move_left_or_right_tick > 150:  
@@ -308,7 +316,11 @@ class Tetris:
         pygame.draw.rect(self.surface, COLOR, pygame.Rect(GAME_LEFT - 160, GAME_TOP + 30 , 135, 135), 3)
         self.next_on_the_right.draw_on_right(self.surface)
         if self.hold != None:
-            self.hold.draw_on_left(self.surface)    
+            self.hold.draw_on_left(self.surface)
+        if self.died: 
+            dead_word = LOSE_FONT.render("You Died.", 1, COLOR)
+            self.surface.blit(dead_word,(WIDTH/2 - dead_word.get_width()/2, HEIGHT/2 - dead_word.get_height()/2))
+            BGM.stop()
         pygame.display.update()            
 
 def main():
