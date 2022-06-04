@@ -160,7 +160,9 @@ class Tetris:
         self.surface = surface
         self.field = []
         self.next_queue = []
-       
+        self.score = 0
+        self.level = 0
+
         for _ in range(NUM_ROW):
             row = []
             for _ in range(NUM_COLUMN):
@@ -176,6 +178,7 @@ class Tetris:
         self.hold = None
         self.swapped = False
         self.died = False 
+        self.level = 0
         
     def create_tetrimino(self):
         if len(self.next_queue) < 10:
@@ -204,29 +207,30 @@ class Tetris:
             return
         current_tick = pygame.time.get_ticks()
         keys_pressed = pygame.key.get_pressed()
+
         if current_tick - self.move_left_or_right_tick > 150:  
             self.handle_left_right_movement(keys_pressed)
-            self.move_left_or_right_tick = current_tick
+            self.move_left_or_right_tick = pygame.time.get_ticks()
     
-        if current_tick - self.move_down_tick > 300:   
+        if current_tick - self.move_down_tick > max(100, 1000 - self.level * 100):   
             self.handle_down_movement(keys_pressed)
-            self.move_down_tick = current_tick
+            self.move_down_tick = pygame.time.get_ticks()
             
-        if current_tick - self.rotate_tick > 100:  
+        if current_tick - self.rotate_tick > 125:  
             self.handle_rotate(keys_pressed)
-            self.rotate_tick = current_tick
+            self.rotate_tick = pygame.time.get_ticks()
             
-        if current_tick - self.hard_drop_tick > 180:  
+        if current_tick - self.hard_drop_tick > 200:  
             self.handle_hard_drop(keys_pressed)
-            self.hard_drop_tick = current_tick
+            self.hard_drop_tick = pygame.time.get_ticks()
         
-        if current_tick - self.fast_move_down_tick > 100:  
+        if current_tick - self.fast_move_down_tick > 50:  
             self.handle_fast_move_down(keys_pressed)
-            self.fast_move_down_tick = current_tick
+            self.fast_move_down_tick = pygame.time.get_ticks()
 
         if current_tick - self.hold_tick > 100:  
             self.handle_hold(keys_pressed)
-            self.hold_tick = current_tick 
+            self.hold_tick = pygame.time.get_ticks()
             
     def handle_hold(self, keys_pressed):
         if keys_pressed[pygame.K_LCTRL]:
@@ -248,10 +252,13 @@ class Tetris:
             self.connect()
 
     def remove_lines(self):
+        count = 0
         for _ in range(4):
             for i in range(NUM_ROW-1, 0, -1):
                 if self.is_full_line(self.field[i]):
+                    count +=1
                     self.copy_rows_above(i)
+        return count
                 
     def copy_rows_above(self, start_line):
         for i in range(start_line, 0, -1): 
@@ -296,7 +303,9 @@ class Tetris:
     def connect(self):
         for block in self.tetrimino.blocks:
             self.field[block.y][block.x] = self.tetrimino.color
-        self.remove_lines()  
+        count = self.remove_lines()  
+        self.score += count
+        self.level = self.score / 30
         self.create_tetrimino()
         
     def draw(self):
@@ -306,6 +315,8 @@ class Tetris:
         self.surface.blit(next_word,(GAME_LEFT + GAME_WIDTH + 25, GAME_TOP - 15))
         hold_word = NEXT_FONT.render("Hold:", 1, COLOR)
         self.surface.blit(hold_word,(GAME_LEFT - 160,GAME_TOP - 15))
+        score_word = NEXT_FONT.render("Score:" + str(self.score),  1, COLOR)
+        self.surface.blit(score_word,(GAME_LEFT - 160,GAME_HEIGHT + GAME_TOP - 45 ))
         for r in range(NUM_ROW):
             for c in range(NUM_COLUMN):
                 if self.field[r][c][0] > -1:
@@ -332,7 +343,7 @@ def main():
     BGM.play()
     while run:
         #pygame.time.delay(100)
-        clock.tick(60)
+        clock.tick(120)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
